@@ -84,7 +84,7 @@ const Listing = () => (
           <strong>
             <FormattedMessage id={item.id} defaultMessage={item.context} />
           </strong>
-        < /p> :
+        </p> :
         <p key={item.id} style={{ textIndent: 20 }}>
           <FormattedMessage id={item.id} defaultMessage={item.context} />
         </p>
