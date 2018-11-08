@@ -415,7 +415,7 @@ export default class AddOffer extends Component {
         </div>
         <div>
           <Toggle checked={isPartialClosure} onChange={() => this.setState((state) => ({ isPartialClosure: !state.isPartialClosure }))} /> Enabled to partial closure
-          <Tooltip text="To change the exchange rate" />
+          <Tooltip text="Partial closure means that you will receive exchange requests for the amount less than the total amount you want sell. For example if you want to sell 1 BTC, other users can send you exchange requests for 0.1, 0.5 BTC" />
         </div>
         <Button styleName="button" fullWidth brand disabled={isDisabled} onClick={this.handleNext}>
           <FormattedMessage id="AddOffer396" defaultMessage="Next" />
