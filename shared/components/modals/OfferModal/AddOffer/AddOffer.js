@@ -360,8 +360,6 @@ export default class AddOffer extends Component {
     linked.sellAmount.check((value) => value > minAmount[sellCurrency], `Amount must be greater than ${minAmount[sellCurrency]} `)
     linked.sellAmount.check((value) => value <= balance, `Amount must be bigger than on your balance`)
 
-    console.log('this state', isPartialClosure)
-
     return (
       <div styleName="wrapper">
         { this.isEthOrERC20() &&
