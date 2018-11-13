@@ -164,6 +164,7 @@ export default class Row extends Component {
     const { currency, balance, isBalanceFetched, address, contractAddress, fullName, unconfirmedBalance } = this.props
     const eosAccountActivated = localStorage.getItem(constants.localStorage.eosAccountActivated) === "true"
     const telosAccountActivated = localStorage.getItem(constants.localStorage.telosAccountActivated) === "true"
+
     return (
       <tr
         styleName={this.props.index === this.props.selectId || !isMobile ? 'showButtons' : 'hidden'}
@@ -233,7 +234,6 @@ export default class Row extends Component {
                 {
                   !contractAddress ? (
                     <div styleName="notContractAddress">
-
                       {
                         address !== '' && <i className="far fa-copy" styleName="icon" data-tip data-for="Copy" style={{ width: '14px' }} />
                       }
@@ -303,7 +303,7 @@ export default class Row extends Component {
                 </span>
               </WithdrawButton>
             )}
-            <WithdrawButton onClick={this.handleWithdraw} styleName="marginRight" disabled={isBalanceEmpty} datatip="Send your currency">
+            <WithdrawButton onClick={this.handleWithdraw} styleName="marginRight" disabled={isBalanceEmpty}>
               <i className="fas fa-arrow-alt-circle-right" />
               <span>
                 <FormattedMessage id="Row305" defaultMessage="Send" />
@@ -312,7 +312,7 @@ export default class Row extends Component {
             </WithdrawButton>
             {
               tradeAllowed && (
-                <WithdrawButton onClick={() => this.handleGoTrade(currency)} disabled={isBalanceEmpty} datatip="Swap your currency or create order to swap">
+                <WithdrawButton onClick={() => this.handleGoTrade(currency)} styleName="marginRight" disabled={isBalanceEmpty} >
                   <i className="fas fa-exchange-alt" />
                   <span>
                     <FormattedMessage id="RowWallet313" defaultMessage="Exchange" />
