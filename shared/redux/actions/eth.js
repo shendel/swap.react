@@ -1,4 +1,4 @@
-import helpers, { request, constants, api, cacheStorageGet, cacheStorageSet } from 'helpers'
+import helpers, { apiLooper, constants, api, cacheStorageGet, cacheStorageSet } from 'helpers'
 import { getState } from 'redux/core'
 import actions from 'redux/actions'
 import web3 from 'helpers/web3'
@@ -57,6 +57,11 @@ const loginWithKeychain = async () => {
   return selectedKey
 }
 
+const isETHAddress = (address) => {
+  const { user: { ethData } } = getState()
+  if (ethData && ethData.address && ethData.address.toLowerCase() === address.toLowerCase()) return ethData
+}
+
 const getBalance = () => {
   const { user: { ethData: { address } } } = getState()
 
@@ -81,7 +86,7 @@ const getReputation = () =>
     const { user: { ethData: { address, privateKey } } } = getState()
     const addressOwnerSignature = web3.eth.accounts.sign(address, privateKey)
 
-    request.post(`${api.getApiServer('swapsExplorer')}/reputation`, {
+    apiLooper.post('swapsExplorer', `/reputation`, {
       json: true,
       body: {
         address,
@@ -104,13 +109,22 @@ const fetchBalance = (address) =>
       console.log('Web3 doesn\'t work please again later ', e.error)
     })
 
+const getInvoices = () => {
+  const { user: { ethData: { address } } } = getState()
+
+  return actions.invoices.getInvoices({
+    currency: 'ETH',
+    address,
+  })
+}
+
 const getTransaction = () =>
   new Promise((resolve) => {
     const { user: { ethData: { address } } } = getState()
 
-    const url = `${api.getApiServer('etherscan')}?module=account&action=txlist&address=${address}&startblock=0&endblock=99999999&sort=asc&apikey=RHHFPNMAZMD6I4ZWBZBF6FA11CMW9AXZNM`
+    const url = `?module=account&action=txlist&address=${address}&startblock=0&endblock=99999999&sort=asc&apikey=RHHFPNMAZMD6I4ZWBZBF6FA11CMW9AXZNM`
 
-    return request.get(url)
+    return apiLooper.get('etherscan', url)
       .then((res) => {
         const transactions = res.result
           .filter((item) => item.value > 0).map((item) => ({
@@ -167,4 +181,6 @@ export default {
   fetchBalance,
   getTransaction,
   getReputation,
+  getInvoices,
+  isETHAddress
 }

@@ -1,3 +1,15 @@
 export default [
-  'TLOS',
+  'BTC',
+  'BTC (SMS-Protected)',
+  'BTC (Multisig)',
+  'BCH',
+  'ETH',
+  'LTC',
+  'SWAP',
+  'HDP',
+  'USDT',
+  'MSK',
+  'RURSBER',
+  'RURCASH',
+  'USDSWIFT',
 ]

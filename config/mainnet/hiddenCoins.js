@@ -1,5 +1,4 @@
 export default [
-  'TLOS',
   'DEB',
   'YUP',
   'JOT',
@@ -48,4 +47,17 @@ export default [
   'SYC2',
   'LEV',
   'GUSD',
+  'BTC',
+  'BTC (SMS-Protected)',
+  'BTC (Multisig)',
+  'BCH',
+  'ETH',
+  'LTC',
+  'SWAP',
+  'HDP',
+  'USDT',
+  'MSK',
+  'RURSBER',
+  'RURCASH',
+  'USDSWIFT',
 ]

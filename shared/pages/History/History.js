@@ -15,6 +15,7 @@ import PageHeadline from 'components/PageHeadline/PageHeadline'
 import InfiniteScrollTable from 'components/tables/InfiniteScrollTable/InfiniteScrollTable'
 import { FormattedMessage, injectIntl, defineMessages } from 'react-intl'
 import InlineLoader from 'components/loaders/InlineLoader/InlineLoader'
+import ContentLoader from '../../components/loaders/ContentLoader/ContentLoader'
 
 
 const filterHistory = (items, filter) => {
@@ -32,7 +33,7 @@ const filterHistory = (items, filter) => {
 const subTitle = defineMessages({
   subTitleHistory: {
     id: 'Amount68',
-    defaultMessage: 'My History',
+    defaultMessage: 'Transactions',
   },
 })
 
@@ -43,9 +44,17 @@ const subTitle = defineMessages({
 }))
 @CSSModules(stylesHere, { allowMultiple: true })
 export default class History extends Component {
-  state = {
-    renderedItems: 10,
+
+  constructor(props) {
+    super()
+
+    const commentsList = actions.comments.getComment()
+    this.state = {
+      renderedItems: 10,
+      commentsList: commentsList || null
+    }
   }
+
 
   componentDidMount() {
     // actions.analytics.dataEvent('open-page-history')
@@ -64,50 +73,49 @@ export default class History extends Component {
     }
   }
 
-  rowRender = (row) => (
-    <Row key={row.hash} {...row} />
-  )
+  onSubmit = (obj) => {
+    this.setState(() => ({ commentsList: obj }))
+    actions.comments.setComment(obj)
+  }
+
+  rowRender = (row) => {
+    const { commentsList } = this.state
+    return (
+      <Row key={row.hash - row.type} hiddenList={commentsList} onSubmit={this.onSubmit} {...row} />
+    )
+  }
 
   render() {
     const { items, swapHistory, intl } = this.props
-    const titles = [
-      <FormattedMessage id="Coin61" defaultMessage="Coin" />,
-      <FormattedMessage id="Status61" defaultMessage="Status" />,
-      <FormattedMessage id="Statement61" defaultMessage="Statement" />,
-      <FormattedMessage id="Amount61" defaultMessage="Amount" />,
-    ]
-
-    console.warn('swapHistory', swapHistory)
-    console.warn('items', items)
+    const titles = [];
 
     return (
-      items.length || swapHistory.length ?
+      items ? (
         <section styleName="history">
-          <PageHeadline subTitle={intl.formatMessage(subTitle.subTitleHistory)} />
-          { swapHistory.length > 0 && <SwapsHistory showSubtitle="true" orders={swapHistory.filter(item => item.step >= 4)} /> }
-          <h3 data-tip data-for="transactions" style={{ width:'210px' }}>
-            <FormattedMessage id="history68" defaultMessage="All transactions" />
-          </h3>
-          <ReactTooltip id="transactions" type="light" effect="solid">
-            <span>
-              <FormattedMessage id="history72" defaultMessage="All transactions sent and received" />
-            </span>
-          </ReactTooltip>
-          <Filter />
-          <InfiniteScrollTable
-            className={styles.history}
-            titles={titles}
-            bottomOffset={400}
-            getMore={this.loadMore}
-            itemsCount={items.length}
-            items={items.slice(0, this.state.renderedItems)}
-            rowRender={this.rowRender}
-          />
-        </section> :
-        <div styleName="loader">
-          <FormattedMessage id="history107" defaultMessage="Loading" />
-          <InlineLoader />
+          <h3 styleName="historyHeading">Activity</h3>
+          {
+            items.length > 0 ? (
+              <InfiniteScrollTable
+                className={styles.history}
+                titles={titles}
+                bottomOffset={400}
+                getMore={this.loadMore}
+                itemsCount={items.length}
+                items={items.slice(0, this.state.renderedItems)}
+                rowRender={this.rowRender}
+              /> 
+            ) : (
+              <div styleName="historyContent">
+                <ContentLoader rideSideContent empty />
+              </div>
+            )
+          }
+        </section>
+      ) : (
+        <div styleName="historyContent">
+          <ContentLoader rideSideContent />
         </div>
+      )
     )
   }
 }

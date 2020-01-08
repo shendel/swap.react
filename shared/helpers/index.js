@@ -1,4 +1,3 @@
-import eos from './eos'
 import btc from './btc'
 import eth from './eth'
 import ethToken from './ethToken'
@@ -30,9 +29,10 @@ import { migrate } from './migrations/'
 import getUnixTimeStamp from './getUnixTimeStamp'
 import { cacheStorageGet, cacheStorageSet } from './cache'
 
+import apiLooper from './apiLooper'
+
 
 export default {
-  eos,
   // xlm,
   bch,
   btc,
@@ -44,7 +44,6 @@ export default {
 }
 
 export {
-  eos,
   // xlm,
   bch,
   tips,
@@ -75,4 +74,6 @@ export {
   getUnixTimeStamp,
   cacheStorageGet,
   cacheStorageSet,
+
+  apiLooper,
 }

@@ -3,8 +3,8 @@ import { BigNumber } from 'bignumber.js'
 import config from 'app-config'
 import { getState } from 'redux/core'
 import reducers from 'redux/core/reducers'
-import bitcoin from 'bitcoinjs-lib'
-import { btc, request, constants, api } from 'helpers'
+import * as bitcoin from 'bitcoinjs-lib'
+import { btc, apiLooper, constants, api } from 'helpers'
 
 
 const login = (privateKey) => {
@@ -14,7 +14,7 @@ const login = (privateKey) => {
     const hash  = bitcoin.crypto.sha256(privateKey)
     const d     = BigInteger.fromBuffer(hash)
 
-    keyPair     = new bitcoin.ECPair(d, null, { network: btc.network })
+    keyPair     = bitcoin.ECPair.fromWIF(privateKey, btc.network)
   }
   else {
     console.info('Created account Bitcoin ...')
@@ -22,7 +22,7 @@ const login = (privateKey) => {
     privateKey  = keyPair.toWIF()
   }
 
-  const account     = new bitcoin.ECPair.fromWIF(privateKey, btc.network) // eslint-disable-line
+  const account     = bitcoin.ECPair.fromWIF(privateKey, btc.network) // eslint-disable-line
   const address     = account.getAddress()
   const publicKey   = account.getPublicKeyBuffer().toString('hex')
 
@@ -52,7 +52,7 @@ const getBalance = async () => {
 }
 
 const fetchBalance = (address, assetId = 31) =>
-  request.post(`${config.api.usdt}v1/address/addr/`, {
+  apiLooper.post('usdt', `v1/address/addr/`, {
     body: `addr=${address}`,
   })
     .then(response => {
@@ -95,7 +95,7 @@ const getTransaction = () => {
   const { user: { usdtData: { address } } } = getState()
 
   return new Promise((resolve) => {
-    request.post(`${config.api.usdt}v1/address/addr/details/`, {
+    apiLooper.post('usdt', `v1/address/addr/details/`, {
       body: `addr=${address}`,
     })
       .then((res) => {
@@ -117,7 +117,7 @@ const getTransaction = () => {
 }
 
 const fetchUnspents = (address) =>
-  request.get(`${config.api.bitpay}/addr/${address}/utxo`)
+  apiLooper.get('bitpay', `/addr/${address}/utxo`)
 
 
 const send = ({ from, to, amount } = {}) => {
@@ -177,7 +177,7 @@ const createOmniScript = (amount) => {
 
 
 const broadcastTx = (txRaw) =>
-  request.post(`${api.getApiServer('bitpay')}/tx/send`, {
+  apiLooper.post('bitpay', `/tx/send`, {
     body: {
       rawtx: txRaw,
     },

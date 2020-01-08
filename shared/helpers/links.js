@@ -2,19 +2,26 @@ const linksManager = {
   home: '/',
   exchange: '/exchange',
   history: '/history',
+  createWallet: '/createWallet',
+
   wallets: '/wallets',
+  send: '/withdraw',
   currencyWallet: '/wallet',
   swap: '/swaps',
   feed: '/feed',
-  aboutus: '/aboutus',
+  aboutUs: '/aboutUs',
   listing: 'https://listing.swap.online/',
   test: 'https://testnet.swap.online',
   main: 'https://swap.online/',
   ieo: '/IEO',
+  wallet: '/wallet',
+  oldWallet: 'oldWallet',
   coins: '/coins',
   partial: '/partial',
   notFound: '/NotFound',
   newPage: '/+NewPage',
+  multisign: '/multisign',
+  createInvoice: '/createinvoice',
 
   // social networks
   medium: 'https://medium.com/swaponline',
@@ -107,7 +114,7 @@ const linksManager = {
   ],
   // footer new links
   footer: {
-    exchange : 'https://swap.online/exchange',
+    exchange: 'https://swap.online/exchange',
     wallet: 'https://swap.online',
     widget: 'https://widget.swap.online/',
     chromeextantion: 'https://chrome.google.com/webstore/detail/swaponline/oldojieloelkkfeacfinhcngmbkepnlm',
@@ -131,9 +138,9 @@ const linksManager = {
 }
 
 linksManager.getFaqLink = (faqID) => {
-  for (var i = 0; i < linksManager.faq.length; i++) {
+  for (let i = 0; i < linksManager.faq.length; i++) {
     if (linksManager.faq[i].id
-      && (linksManager.faq[i].id == faqID)
+      && (linksManager.faq[i].id === faqID)
     ) {
       return linksManager.faq[i].link
     }

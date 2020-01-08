@@ -63,9 +63,9 @@ export default class Input extends Component {
 
   render() {
     const {
-      className, inputContainerClassName, inputClassName, errorStyle,
+      className, inputContainerClassName, inputClassName, errorStyle, openScan, qr,
       valueLink: { error }, valueLink, dontDisplayError, inputCustomStyle,
-      multiline, focusOnInit, disabled, readOnly, type, usd, ...rest
+      multiline, focusOnInit, disabled, readOnly, type, usd, srollingForm, ...rest
     } = this.props
 
     const inputContainerStyleName = cx('inputContainer', {
@@ -77,13 +77,18 @@ export default class Input extends Component {
       onBlur: this.handleBlur,
     }
 
+    let style = errorStyle ? 'input inputError' : 'input '
+    if (srollingForm) {
+      style = style + "srollingForm"
+    }
+
     return (
       <div styleName="root" className={className}>
         <div styleName={inputContainerStyleName} className={inputContainerClassName}>
           {
             React.createElement(multiline ? TextArea : ValueLinkInput, {
               ...ignoreProps(rest, 'styles'),
-              styleName: errorStyle ? 'input inputError' : 'input',
+              styleName: style,
               className: inputClassName,
               style: inputCustomStyle,
               valueLink,
@@ -95,8 +100,13 @@ export default class Input extends Component {
               ...focusEvent,
             })
           }
-          { usd > 0 &&
-            <p styleName="textUsd" >{`~${usd}`}$</p>
+          {usd > 0 &&
+            <p styleName="rightEl" >{`~${usd}`}$</p>
+          }
+          {qr &&
+            <p styleName="rightEl qr" >
+              <i className="fas fa-qrcode" onClick={openScan} />
+            </p>
           }
         </div>
         {

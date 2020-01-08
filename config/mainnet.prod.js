@@ -8,8 +8,8 @@ export default {
   local: 'online',
   dir: 'mainnet',
 
-  base: 'https://swap.online/',
-  publicPath: `https://swap.online${baseConfig.publicPath}`,
+  base: './',
+  publicPath: process.argv[2] || `./`, // call build like: `npm run build:mainnet https://swaponline.github.io/` to add different origin
 
   ...config,
 }

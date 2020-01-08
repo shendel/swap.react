@@ -6,7 +6,6 @@ import xrp from './xrp.svg'
 import xlm from './xlm.svg'
 import bch from './bch.svg'
 import nim from './nim.svg'
-import eos from './eos.svg'
 import swap from './swap.svg'
 import usdt from './usdt.svg'
 import syc2 from './syc2.svg'
@@ -19,10 +18,12 @@ import lev from './lev.svg'
 import ltc from './ltc.svg'
 import bxb from './bxb.svg'
 import dcn from './dcn.svg'
+import eurs from './eurs.svg'
 
 
 export default {
   btc,
+  'btc (multisig)': btc,
   dcn,
   bxb,
   kn,
@@ -40,7 +41,7 @@ export default {
   swap,
   waves,
   xrp,
-  eos,
   yup,
   nim,
+  eurs,
 }
