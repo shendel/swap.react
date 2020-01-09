@@ -106,8 +106,8 @@ class Row extends React.PureComponent {
     const { ind } = this.state
 
     const commentDate = moment(date).format('LLLL')
-    const commentLabel = invoiceData && invoiceData.label;
-    const fullComment = `${commentDate}  ${commentLabel}`;
+    const commentLabel = (invoiceData && invoiceData.label) ? invoiceData.label : ''
+    const fullComment = `${commentDate}  ${commentLabel}`
     onSubmit({ ...hiddenList, [ind]: fullComment})
     this.changeComment(fullComment)
     this.toggleComment(false)
@@ -155,14 +155,15 @@ class Row extends React.PureComponent {
     }
 
     const hasInvoiceButtons = (invoiceData && !invoiceData.txid && direction === 'in' && invoiceData.status === 'new' && !cancelled && !payed)
-    let invoiceStatusClass = 'confirm green'
+    let invoiceStatusClass = 'confirm red'
     let invoiceStatusText = <FormattedMessage id="HistoryRowInvoiceStatusNew" defaultMessage="Пока не оплачен" />
     if (invoiceData && ((invoiceData.status === 'ready') || payed)) {
-      invoiceStatusClass = 'confirm'
+      invoiceStatusClass = 'confirm green'
       invoiceStatusText = <FormattedMessage id="RowHistoryInvoicePayed" defaultMessage="Оплачен" />
     }
     if (invoiceData && ((invoiceData.status === 'cancelled') || cancelled)) {
-      invoiceStatusClass = 'confirm red'
+      invoiceStatusClass = 'confirm gray'
+      statusStyleAmount = 'status rejected'
       invoiceStatusText = <FormattedMessage id="RowHistoryInvoiceCancelled" defaultMessage="Отклонен" />
     }
     /* eslint-disable */
@@ -209,7 +210,7 @@ class Row extends React.PureComponent {
               <CommentRow
                 isOpen={isOpen}
                 comment={comment}
-                label={invoiceData && invoiceData.label}
+                label={(invoiceData && invoiceData.label) ? invoiceData.label : ''}
                 commentCancel={this.commentCancel}
                 ind={ind}
                 submit={onSubmit}
