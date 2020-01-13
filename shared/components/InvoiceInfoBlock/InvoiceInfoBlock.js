@@ -13,6 +13,7 @@ const InvoiceInfoBlock = (props) => {
   bip0020link = `${bip0020link}?amount=${invoiceData.amount}`
   bip0020link = `${bip0020link}&label=Invoice-${invoiceData.id}-${invoiceData.invoiceNumber}`
   if (invoiceData.label) bip0020link = `${bip0020link}&message=${encodeURI(invoiceData.label)}`
+  console.log('invoicedata', invoiceData)
 
   return (
     <div styleName='invoiceInfoBlock'>
@@ -23,9 +24,15 @@ const InvoiceInfoBlock = (props) => {
         <span>{invoiceData.label}</span>
       }
       {invoiceData.type === 'BTC' &&
-        <a href={bip0020link}>
-          <FormattedMessage id="InvoiceInfoBlockOpenDesktopApp" defaultMessage="Оплатить с внешнего кошелька" />
-        </a>
+        <div>
+          <img
+            src={`https://chart.googleapis.com/chart?chs=196x196&cht=qr&chl=${encodeURI(bip0020link)}`}
+            alt={`bitcoin: ${(invoiceData.destination) ? invoiceData.destination : invoiceData.fromAddress} amount: ${invoiceData.amount}`}
+          />
+          <a href={bip0020link}>
+            <FormattedMessage id="InvoiceInfoBlockOpenDesktopApp" defaultMessage="Оплатить с внешнего кошелька" />
+          </a>
+        </div>
       }
       <hr />
     </div>
