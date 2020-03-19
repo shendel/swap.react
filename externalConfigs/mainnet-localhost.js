@@ -28,7 +28,7 @@ window.buildOptions = {
   curEnabled: { // Or 'false' if enabled all
     btc: true,
     eth: true,
-    //ltc: true,
+    ltc: true,
   },
   invoiceEnabled: false, // Allow create invoices
 }

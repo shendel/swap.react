@@ -18,6 +18,8 @@ export default {
   btcMultisigKeychainPublicKey: `${process.env.ENTRY}:btcMultisig:keychainPublicKey`,
   // xlm: `${process.env.ENTRY}:xlm:privateKey`,
   bch: `${process.env.ENTRY}:bch:privateKey`,
+  bchOld: `${process.env.ENTRY}:bch:privateKey:old`,
+  bchMnemonic: `${process.env.ENTRY}:bch:mnemonicKey`,
   ltc: `${process.env.ENTRY}:ltc:privateKey`,
   ltcOld: `${process.env.ENTRY}:ltc:privateKey:old`,
   ltcMnemonic: `${process.env.ENTRY}:ltc:mnemonicKey`,

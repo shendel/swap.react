@@ -2,10 +2,95 @@ import BigInteger from 'bigi'
 
 import { BigNumber } from 'bignumber.js'
 import * as bitcoin from 'bitcoinjs-lib'
+import * as bip32 from 'bip32'
+import * as bip39 from 'bip39'
+
 import bitcoinMessage from 'bitcoinjs-message'
 import { getState } from 'redux/core'
 import reducers from 'redux/core/reducers'
 import { ltc, apiLooper, constants, api } from 'helpers'
+
+const getRandomMnemonicWords = () => bip39.generateMnemonic()
+const validateMnemonicWords = (mnemonic) => bip39.validateMnemonic(mnemonic)
+
+const sweepToMnemonic = (mnemonic, path) => {
+  const wallet = getWalletByWords(mnemonic, path)
+  localStorage.setItem(constants.privateKeyNames.ktcMnemonic, wallet.WIF)
+  return wallet.WIF
+}
+
+const isSweeped = () => {
+  const {
+    user: {
+      ltcData,
+      ltcMnemonicData,
+    },
+  } = getState()
+
+  if (ltcMnemonicData
+    && ltcMnemonicData.address
+    && ltcData
+    && ltcData.address
+    && ltcData.address.toLowerCase() !== ltcMnemonicData.address.toLowerCase()
+  ) return false
+
+  return true
+}
+
+const getSweepAddress = () => {
+  const {
+    user: {
+      ltcMnemonicData,
+    },
+  } = getState()
+
+  if (ltcMnemonicData && ltcMnemonicData.address) return ltcMnemonicData.address
+  return false
+}
+
+const auth = (privateKey) => {
+  
+}
+
+const getWalletByWords = (mnemonic, walletNumber = 0, path) => {
+  const seed = bip39.mnemonicToSeedSync(mnemonic);
+  const root = bip32.fromSeed(seed, ltc.network);
+  const node = root.derivePath((path) ? path : `m/44'/0'/0'/0/${walletNumber}`)
+
+  const account = bitcoin.payments.p2pkh({
+    pubkey: node.publicKey,
+    network: ltc.network,
+  })
+
+  return {
+    mnemonic,
+    address: account.address,
+    publicKey: node.publicKey.toString('Hex'),
+    WIF: node.toWIF(),
+    node,
+    account,
+  }
+}
+
+window.LTC_getWalletByWords = getWalletByWords
+
+const getPrivateKeyByAddress = (address) => {
+  const {
+    user: {
+      ltcData: {
+        address: oldAddress,
+        privateKey,
+      },
+      ltcMnemonicData: {
+        address: mnemonicAddress,
+        privateKey: mnemonicKey,
+      }
+    },
+  } = getState()
+
+  if (oldAddress.toLowerCase() === address.toLowerCase()) return privateKey
+  if (mnemonicAddress.toLowerCase() === address.toLowerCase()) return mnemonicKey
+}
 
 
 const login = (privateKey) => {
@@ -213,5 +298,12 @@ export default {
   fetchTxInfo,
   fetchBalance,
   signMessage,
-  getReputation
+  getReputation,
+  getWalletByWords,
+  getRandomMnemonicWords,
+  validateMnemonicWords,
+  sweepToMnemonic,
+  isSweeped,
+  getSweepAddress,
+  //getDataByAddress,
 }
