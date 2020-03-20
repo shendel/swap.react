@@ -92,6 +92,10 @@ export default class SwapComponent extends PureComponent {
           participant,
         } = swap
 
+        if (btcScriptValues) {
+          btcScriptValues.scriptAddress = flow.btcSwap.createScript(btcScriptValues)
+        }
+
         const sendedData = {
           id,
           buyCurrency,
@@ -102,14 +106,15 @@ export default class SwapComponent extends PureComponent {
           destinationSellAddress,
           owner,
           participant,
-          btcScriptValues
+          btcScriptValues,
         }
         const sendedJSON = JSON.stringify(sendedData)
-        
+
         localStorage.setItem('axiosSwaps', JSON.stringify(swapsId))
         clearInterval(this.sendDebugInfoTimer)
 
         const message = `Swap enter to step 3 JSON(${sendedJSON}) - ${document.location.host}`
+
         return axios({
           // eslint-disable-next-line max-len
           url: `https://noxon.wpmix.net/counter.php?msg=${encodeURI(message)}`,
