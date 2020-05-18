@@ -39,6 +39,7 @@ export default class ModalConductor extends Component {
     }
     else {
       if (offsetTop > 0) {
+        console.log('Fired ModalConductor scroll')
         window.scrollTo(0, offsetTop)
 
         this.setState({

@@ -256,6 +256,7 @@ export default class Row extends Component {
     const pair = currency.toLowerCase() === 'btc' ? 'eth' : 'btc'
 
     if (decline.length === 0) {
+      console.log('Fired Rod declime scroll')
       window.scrollTo(0, 0)
       this.props.history.push(
         localisedUrl(

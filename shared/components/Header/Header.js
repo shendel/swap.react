@@ -292,6 +292,7 @@ export default class Header extends Component {
   };
 
   handleScroll = () => {
+    console.log('handleScroll fired')
     if (this.props.history.location.pathname === "/") {
       this.setState(() => ({
         sticky: false
