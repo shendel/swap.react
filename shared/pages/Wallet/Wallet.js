@@ -389,6 +389,18 @@ export default class Wallet extends Component {
     })
   }
 
+  handleNavItemClick = index => {
+    if (index === 1) {
+      // fetch actual tx list
+      actions.user.setTransactions()
+      actions.core.getSwapHistory()
+    }
+
+    this.setState({
+      activeView: index,
+    })
+  }
+
   render() {
     const {
       activeView,
@@ -480,6 +492,10 @@ export default class Wallet extends Component {
       <DashboardLayout
         page={page}
         isDark={isDark}
+        activeView={activeView}
+        handleNavItemClick={this.handleNavItemClick}
+        history={this.props.history}
+        location={this.props.location}
         BalanceForm={(
           <BalanceForm
             isDark={isDark}

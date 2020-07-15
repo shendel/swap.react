@@ -1,5 +1,6 @@
-import React, { Component } from 'react'
+import React, { PureComponent } from 'react'
 import CSSModules from 'react-css-modules'
+import { withRouter } from 'react-router-dom'
 
 import { connect } from 'redaction'
 import actions from 'redux/actions'
@@ -54,8 +55,9 @@ const isDark = localStorage.getItem(constants.localStorage.isDark)
   items: filterHistory(transactions, filter),
   swapHistory,
 }))
+@withRouter
 @CSSModules(stylesHere, { allowMultiple: true })
-export default class History extends Component {
+export default class History extends PureComponent {
 
   constructor(props) {
     super(props)
