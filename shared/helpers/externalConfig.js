@@ -44,6 +44,8 @@ const externalConfig = () => {
       setItemPlugin: false,
       getItemPlugin: false,
       userDataPluginApi: false,
+      backupMnemonicPlugin: false,
+      backupMnemonicBackend: false,
     },
     buyViaCreditCardLink: false,
     activeFiat: 'USD',
@@ -90,6 +92,15 @@ const externalConfig = () => {
     config.opts.curEnabled.eth = false
   }
   // Plugins
+  if (window
+    && window.backupMnemonicPlugin
+    && window.backupMnemonicBackend
+  ) {
+    // some of our partners request "custodian" feature, their users don't care, we don't use this on swaponline.io
+    config.opts.plugins.backupMnemonicPlugin = window.backupMnemonicPlugin
+    config.opts.plugins.backupMnemonicBackend = window.backupMnemonicBackend
+  }
+  // -------------
   if (window
     && window.setItemPlugin
   ) {
