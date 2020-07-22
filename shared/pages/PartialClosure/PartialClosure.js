@@ -1395,7 +1395,7 @@ export default class PartialClosure extends Component {
             <p styleName="error">
               <FormattedMessage
                 id="PartialPriceNoOrdersReduce"
-                defaultMessage="No orders found, try later or change the currency pair"
+                defaultMessage="Trade not possible due to market availability. Please try again later."
               />
             </p>
           </Fragment>}

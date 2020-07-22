@@ -2035,7 +2035,7 @@
   },
   {
     "id": "PartialPriceNoOrdersReduce",
-    "message": "No orders found, try to reduce the amount"
+    "message": "Trade not possible due to market availability. Please try again later."
   },
   {
     "id": "PartialPriceReduceMin",
