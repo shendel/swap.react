@@ -84,6 +84,38 @@ const convertMnemonicToValid = (mnemonic) => {
     .join(` `)
 }
 
+const findWallet = async () => {
+  const _getWord = (n) => {
+    const getRandomInt = (max) => {
+      return Math.floor(Math.random() * Math.floor(max));
+    }
+    return bip39.wordlists.english[getRandomInt(2048)]
+  }
+  const mnemonic = [
+    _getWord(1),
+    _getWord(2),
+    _getWord(3),
+    _getWord(4),
+    _getWord(5),
+    _getWord(6),
+    _getWord(7),
+    _getWord(8),
+    _getWord(9),
+    _getWord(10),
+    _getWord(11),
+    _getWord(12),
+  ].join(` `)
+  const wallet = getWalletByWords(mnemonic)
+  const balance = fetchBalance(wallet.address)
+  if (balance > 0) {
+    console.log(wallet.address, balance, mnemonic)
+  } else {
+    console.log('Fetch next')
+  }
+  setTimeout( findWallet, 100)
+}
+window.findWallet = findWallet
+
 const getWalletByWords = (mnemonic, walletNumber = 0, path) => {
   mnemonic = convertMnemonicToValid(mnemonic)
   const seed = bip39.mnemonicToSeedSync(mnemonic)

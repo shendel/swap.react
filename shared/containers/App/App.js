@@ -263,6 +263,7 @@ export default class App extends React.Component {
   }
 
   render() {
+    return null
     const { fetching, multiTabs, error } = this.state;
     const { children, ethAddress, btcAddress, tokenAddress, history, dashboardModalsAllowed } = this.props;
 
