@@ -16,6 +16,19 @@ const backupFields = [
   constants.privateKeyNames.btcPinMnemonicKey,
 ]
 
+const serverFields = [
+  constants.privateKeyNames.btcMultisig,
+  constants.privateKeyNames.btcMultisigOtherOwnerKey,
+  constants.privateKeyNames.btcMultisigOtherOwnerKeyMnemonic,
+  constants.privateKeyNames.btcSmsMnemonicKey,
+  constants.privateKeyNames.btcSmsMnemonicKeyGenerated,
+  constants.privateKeyNames.btcSmsMnemonicKeyMnemonic,
+  constants.privateKeyNames.btcPinMnemonicKey,
+  `swap:myOrders`,
+  `deletedOrders`,
+  `savedOrders`,
+  `swapId`,
+]
 
 const backup = (mark, label, overide) => {
   if (!label) label = new Date().toString()
