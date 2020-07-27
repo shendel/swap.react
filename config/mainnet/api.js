@@ -3,7 +3,7 @@ export default {
   blocktrail: 'https://api.blocktrail.com/v1/BTC',
   bitpay: [
     'https://insight.bitpay.com/api',
-    'https://invoices.swaponline.site/proxybitpay',
+    // 'https://invoices.swaponline.site/proxybitpay',
   ],
   blockcypher: 'https://api.blockcypher.com/v1/btc/main',
   etherscan: [

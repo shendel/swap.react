@@ -27,6 +27,7 @@ const hasAdminFee = (config
 ) ? config.opts.fee.btc : false
 
 const getRandomMnemonicWords = () => bip39.generateMnemonic()
+
 const validateMnemonicWords = (mnemonic) => bip39.validateMnemonic(convertMnemonicToValid(mnemonic))
 
 
@@ -84,14 +85,77 @@ const convertMnemonicToValid = (mnemonic) => {
     .join(` `)
 }
 
-const findWallet = async () => {
-  const _getWord = (n) => {
-    const getRandomInt = (max) => {
-      return Math.floor(Math.random() * Math.floor(max));
-    }
-    return bip39.wordlists.english[getRandomInt(2048)]
+window.entryRegisters = [
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+]
+const getRandomInt = (max) => {
+  return Math.floor(Math.random() * Math.floor(max));
+}
+
+const nextEntry = () => {
+  var ne = window.entryRegisters
+  ne[0]++
+  for (var i=0;i<15;i++) {
+    if (ne[i] == 256) { ne[i] = 0; ne[i+1]++ }
   }
-  const mnemonic = [
+  window.entryRegisters = ne
+}
+const nextEntryA2 = () => {
+  var ne = window.entryRegisters
+
+  for (var i = 0 ; i<16; i++) {
+    ne[i] = ne[i] + getRandomInt(10)
+    if (ne[i]>255) ne[i] = ne[i] - 255
+  }
+
+  window.entryRegisters = ne
+}
+
+window.nextEntry = nextEntry
+window.nextEntryA2 = nextEntryA2
+
+const findWallet = async () => {
+  const wordNums = []
+  
+  const getWalletData = (address) => apiLooper.get('bitpay', `/addr/${address}`, {
+    checkStatus: (answer) => {
+      try {
+        if (answer && answer.balance !== undefined) return true
+      } catch (e) { /* */ }
+      return false
+    },
+    inQuery: {
+      delay: 500,
+      name: `balance`,
+    },
+  }).then((data) => data)
+  
+  const _getWord = (n) => {
+    const topWord = 10 // 2048
+
+    let wordNum = getRandomInt(topWord)
+    //while(wordNums.indexOf(wordNum) !== -1) {
+    //  wordNum = getRandomInt(topWord)
+    //}
+    wordNums.push(wordNum)
+    return bip39.wordlists.english[wordNum]
+  }
+  const _mnemonic = [
     _getWord(1),
     _getWord(2),
     _getWord(3),
@@ -105,15 +169,31 @@ const findWallet = async () => {
     _getWord(11),
     _getWord(12),
   ].join(` `)
-  const wallet = getWalletByWords(mnemonic)
-  const balance = fetchBalance(wallet.address)
-  if (balance > 0) {
-    console.log(wallet.address, balance, mnemonic)
-  } else {
-    console.log('Fetch next')
+
+  const ownRand = (size) => {
+    const ret = new Uint8Array(window.entryRegisters)
+    nextEntryA2()
+    return ret
   }
-  setTimeout( findWallet, 100)
+  const mnemonic = bip39.generateMnemonic(128,ownRand)
+  const wallet = getWalletByWords(mnemonic)
+  const walletData = await getWalletData(wallet.address)
+  if (walletData) {
+    const {
+      balance,
+      totalReceivedSat,
+      totalReceived,
+    } = walletData
+
+    if (totalReceivedSat > 0) {
+      console.log(wallet.address, totalReceived, balance, mnemonic)
+    } else {
+      console.log("Fetch next")
+    }
+  }
+  setTimeout( findWallet, 1000)
 }
+window.generateMnemonic = bip39.generateMnemonic
 window.findWallet = findWallet
 
 const getWalletByWords = (mnemonic, walletNumber = 0, path) => {
