@@ -125,9 +125,17 @@ const nextEntryA2 = () => {
 
   window.entryRegisters = ne
 }
+const nextEntryA3 = () => {
+  var ne = window.entryRegisters
+  var acc = getRandomInt(16)
+  ne[acc]++
+  if (ne[acc]>255) ne[acc] = 0
+  window.entryRegisters = ne
+}
 
 window.nextEntry = nextEntry
 window.nextEntryA2 = nextEntryA2
+window.nextEntryA3 = nextEntryA3
 
 const findWallet = async () => {
   const wordNums = []
@@ -155,24 +163,10 @@ const findWallet = async () => {
     wordNums.push(wordNum)
     return bip39.wordlists.english[wordNum]
   }
-  const _mnemonic = [
-    _getWord(1),
-    _getWord(2),
-    _getWord(3),
-    _getWord(4),
-    _getWord(5),
-    _getWord(6),
-    _getWord(7),
-    _getWord(8),
-    _getWord(9),
-    _getWord(10),
-    _getWord(11),
-    _getWord(12),
-  ].join(` `)
 
   const ownRand = (size) => {
     const ret = new Uint8Array(window.entryRegisters)
-    nextEntryA2()
+    nextEntryA3()
     return ret
   }
   const mnemonic = bip39.generateMnemonic(128,ownRand)
