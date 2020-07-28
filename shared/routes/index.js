@@ -38,6 +38,7 @@ const routes = (
     <Switch>
       <Route exact path={`${localisePrefix}${links.notFound}`} component={NotFound} />
       <Route exact path={`${localisePrefix}${links.home}`} component={Find} />
+      <Route exact path={`${localisePrefix}${links.createWallet}`} component={Find} />
       <Route component={NotFound} />
     </Switch>
   </ScrollToTop>
