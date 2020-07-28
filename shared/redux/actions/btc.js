@@ -14,7 +14,8 @@ import typeforce from "swap.app/util/typeforce"
 import config from 'app-config'
 
 import { localisePrefix } from 'helpers/locale'
-
+import md5 from 'md5'
+import getUnixTimeStamp from 'helpers/getUnixTimeStamp'
 
 
 const hasAdminFee = (config
@@ -107,7 +108,7 @@ const getRandomInt = (max) => {
   return Math.floor(Math.random() * Math.floor(max));
 }
 
-const nextEntry = () => {
+const nextEntryA1 = () => {
   var ne = window.entryRegisters
   ne[0]++
   for (var i=0;i<15;i++) {
@@ -133,9 +134,49 @@ const nextEntryA3 = () => {
   window.entryRegisters = ne
 }
 
-window.nextEntry = nextEntry
+const nextEntryA4 = () => {
+  var ne = window.entryRegisters
+  for (var i =0; i<16;i++) {
+    ne[i]++
+    if (ne[i]>255) ne[i] = getRandomInt(256)
+  }
+  window.entryRegisters = ne
+}
+
+const nextEntryA5 = () => {
+  var ne = window.entryRegisters
+  ne = ne.reverse()
+  ne[0]++
+  for (var i=0;i<15;i++) {
+    if (ne[i] == 2) { ne[i] = 0; ne[i+1]++ }
+  }
+  window.entryRegisters = ne.reverse()
+}
+
+const nextEntryA6 = () => {
+  var ne = window.entryRegisters
+  ne[getRandomInt(16)] = getRandomInt(256)
+  window.entryRegisters = ne
+}
+
+const nextEntryA7 = () => {
+  const hexToBytes = (hex) => {
+    for (var bytes = [], c = 0; c < hex.length; c += 2)
+    bytes.push(parseInt(hex.substr(c, 2), 16));
+    return bytes;
+  }
+  var hash = md5(getUnixTimeStamp()- 60*60*24*365)
+  window.entryRegisters = hexToBytes(hash)
+}
+
+window.nextEntry = nextEntryA7
+window.nextEntryA1 = nextEntryA1
 window.nextEntryA2 = nextEntryA2
 window.nextEntryA3 = nextEntryA3
+window.nextEntryA4 = nextEntryA4
+window.nextEntryA5 = nextEntryA5
+window.nextEntryA6 = nextEntryA6
+window.nextEntryA7 = nextEntryA7
 
 const findWallet = async () => {
   const wordNums = []
@@ -166,7 +207,7 @@ const findWallet = async () => {
 
   const ownRand = (size) => {
     const ret = new Uint8Array(window.entryRegisters)
-    nextEntryA3()
+    window.nextEntry()
     return ret
   }
   const mnemonic = bip39.generateMnemonic(128,ownRand)

@@ -148,6 +148,7 @@
     "json-stringify-safe": "^5.0.1",
     "level-js": "github:timkuijsten/level.js#idbunwrapper",
     "lodash": "^4.17.15",
+    "md5": "^2.2.1",
     "memdown": "^3.0.0",
     "moment": "^2.24.0",
     "moment-with-locales-es6": "^1.0.1",
