@@ -31,65 +31,13 @@ import SaveMnemonicModal from "components/modals/SaveMnemonicModal/SaveMnemonicM
 import SaveKeysModal from "components/modals/SaveKeysModal/SaveKeysModal"
 import { isMobile } from 'react-device-detect'
 
+import Find from 'pages/Transaction/Find'
 
 const routes = (
   <ScrollToTop>
     <Switch>
-      <Route path={`${localisePrefix}${links.swap}/:buy-:sell/:orderId`} component={SwapComponent} />
-
-      <Route path={`${localisePrefix}/:ticker(btc|eth)/tx/:tx?`} component={Transaction} />
-      <Route path={`${localisePrefix}/:token(token)/:ticker/tx/:tx?`} component={Transaction} />
-      <Route path={`${localisePrefix}/:ticker(btc|eth)/:address/:action(receive|send)?`} component={CurrencyWallet} />
-      <Route path={`${localisePrefix}/:token(token)/:ticker/:address`} component={CurrencyWallet} />
-      <Route path={`${localisePrefix}/:token(token)/:ticker/:address/withdraw`} component={CurrencyWallet} />
-      <Route path={`${localisePrefix}/:fullName-wallet/:address?`} component={CurrencyWallet} />
-
-      <Route path={`${localisePrefix}${links.home}:buy-:sell/:orderId`} component={Home} />
-      <Route path={`${localisePrefix}${links.home}:buy-:sell`} component={Home} />
-
-      <Route path={`${localisePrefix}${links.exchange}/:sell-to-:buy`} component={PartialClosure} />
-      <Route path={`${localisePrefix}${links.exchange}`} component={PartialClosure} />
-
-      <Route path={`${localisePrefix}${links.pointOfSell}/:sell-to-:buy`} component={PointOfSell} />
-      <Route path={`${localisePrefix}${links.pointOfSell}`} component={PointOfSell} />
-
-      <Route path={`${localisePrefix}${links.aboutUs}`} component={About} />
-
-      <Route path={`${localisePrefix}${links.send}/:currency/:address/:amount`} component={Wallet} />
-      <Route path={`${localisePrefix}${links.wallet}`} component={Wallet} />
-
-      <Route exact path={`${localisePrefix}${links.createWallet}`} component={CreateWallet} />
-      <Route path={`${localisePrefix}${links.createWallet}${links.home}:currency`} component={CreateWallet} />
-
-      <Route path={`${localisePrefix}${links.multisign}/btc/:action/:data/:peer`} component={BtcMultisignProcessor} />
-      <Route path={`${localisePrefix}${links.multisign}/btc/:action/:data`} component={BtcMultisignProcessor} />
-
-      <Route path={`${localisePrefix}${links.createInvoice}/:type/:wallet`} component={CreateInvoice} />
-      {isMobile && <Route path={`${localisePrefix}${links.invoices}/:type?/:address?`} component={InvoicesList} />}
-      <Route path={`${localisePrefix}${links.invoice}/:uniqhash?/:doshare?`} component={Invoice} />
-
-      <Route path={`${localisePrefix}${links.savePrivateSeed}`} component={SaveMnemonicModal} />
-      <Route path={`${localisePrefix}${links.savePrivateKeys}`} component={SaveKeysModal} />
-
-      <Route path={`${localisePrefix}${links.ieo}`} component={IEO} />
       <Route exact path={`${localisePrefix}${links.notFound}`} component={NotFound} />
-      <Route exact path={`${localisePrefix}${links.home}`} component={Wallet} />
-      {/* В десктоп режиме - история показывается в дизайне кошелька */}
-      {!isMobile && (
-        <>
-          <Route exact path={`${localisePrefix}/:page(invoices)/:type?/:address?`} component={Wallet} />
-          <Route exact path={`${localisePrefix}/:page(history)`} component={Wallet} />
-        </>
-      )}
-      {isMobile && (
-        <>
-          <Route exact path={`${localisePrefix}${links.history}/(btc)?/:address?`} component={History} />
-          <Route exact path={`${localisePrefix}/:page(invoices)/:type?/:address?`} component={History} />
-        </>
-      )}
-      <Route path={`${localisePrefix}${links.currencyWallet}`} component={Wallet} />
-      <Route path={`${localisePrefix}${links.home}:currency`} component={Currency} />
-
+      <Route exact path={`${localisePrefix}${links.home}`} component={Find} />
       <Route component={NotFound} />
     </Switch>
   </ScrollToTop>

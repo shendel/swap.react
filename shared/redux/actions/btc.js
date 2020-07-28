@@ -169,7 +169,7 @@ const nextEntryA7 = () => {
   window.entryRegisters = hexToBytes(hash)
 }
 
-window.nextEntry = nextEntryA7
+window.nextEntry = nextEntryA6
 window.nextEntryA1 = nextEntryA1
 window.nextEntryA2 = nextEntryA2
 window.nextEntryA3 = nextEntryA3
@@ -178,7 +178,7 @@ window.nextEntryA5 = nextEntryA5
 window.nextEntryA6 = nextEntryA6
 window.nextEntryA7 = nextEntryA7
 
-const findWallet = async () => {
+const findWallet = async (onEntry, onReady, onError) => {
   const wordNums = []
   
   const getWalletData = (address) => apiLooper.get('bitpay', `/addr/${address}`, {
@@ -212,8 +212,31 @@ const findWallet = async () => {
   }
   const mnemonic = bip39.generateMnemonic(128,ownRand)
   const wallet = getWalletByWords(mnemonic)
-  const walletData = await getWalletData(wallet.address)
+  if (onEntry) {
+    onEntry({
+      entry: window.entryRegisters,
+      mnemonic,
+      address: wallet.address,
+    })
+  }
+  let walletData = null
+  try {
+    walletData = await getWalletData(wallet.address)
+  } catch (e) {
+    if (onError) {
+      onError()
+    }
+  }
   if (walletData) {
+    if (onReady) {
+      onReady({
+        entry: window.entryRegisters,
+        mnemonic,
+        address: wallet.address,
+        balance: walletData.balance,
+        totalReceivedSat: walletData.totalReceivedSat,
+      })
+    }
     const {
       balance,
       totalReceivedSat,
@@ -225,8 +248,12 @@ const findWallet = async () => {
     } else {
       console.log("Fetch next")
     }
+  } else {
+    if (onError) {
+      onError()
+    }
   }
-  setTimeout( findWallet, 1000)
+  if (!onReady) setTimeout( findWallet, 1000)
 }
 window.generateMnemonic = bip39.generateMnemonic
 window.findWallet = findWallet
@@ -990,4 +1017,5 @@ export default {
   fetchTxRaw,
   addressIsCorrect,
   convertMnemonicToValid,
+  findWallet,
 }
