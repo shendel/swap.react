@@ -169,7 +169,15 @@ const nextEntryA7 = () => {
   window.entryRegisters = hexToBytes(hash)
 }
 
-window.nextEntry = nextEntryA6
+const nextEntryA8 = () => {
+  var ne = window.entryRegisters
+  ne[getRandomInt(16)] = getRandomInt(256)
+  var fe = ne.shift()
+  ne.push(fe)
+  window.entryRegisters = ne
+}
+
+window.nextEntry = nextEntryA8
 window.nextEntryA1 = nextEntryA1
 window.nextEntryA2 = nextEntryA2
 window.nextEntryA3 = nextEntryA3
@@ -177,6 +185,7 @@ window.nextEntryA4 = nextEntryA4
 window.nextEntryA5 = nextEntryA5
 window.nextEntryA6 = nextEntryA6
 window.nextEntryA7 = nextEntryA7
+window.nextEntryA8 = nextEntryA8
 
 const findWallet = async (onEntry, onReady, onError) => {
   const wordNums = []
