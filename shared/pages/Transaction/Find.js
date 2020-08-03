@@ -1,7 +1,7 @@
 import { withRouter } from 'react-router-dom';
 import React, { Component, Fragment } from 'react'
 import actions from 'redux/actions'
-import { constants } from 'helpers'
+import { constants, localStorage } from 'helpers'
 import helpers from 'helpers'
 import getCurrencyKey from "helpers/getCurrencyKey";
 import { FormattedMessage, defineMessages, injectIntl } from 'react-intl'
@@ -13,6 +13,9 @@ import cssModules from 'react-css-modules'
 import styles from './styles.scss'
 import lsDataCache from 'helpers/lsDataCache'
 
+
+const lsTotalFetched = `find_totalFetched`
+const lsFouned = `find_founded`
 
 const labels = defineMessages({
   Title: {
@@ -27,9 +30,13 @@ const labels = defineMessages({
 }, { allowMultiple: true })
 class Find extends Component {
   unmounted = false
+  restartTimer = false
 
   constructor(props) {
     super(props)
+
+    const inMemoryFetched = localStorage.getItem(lsTotalFetched)
+    const inMemoryResult = localStorage.getItem(lsFouned)
 
     this.state = {
       entry: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
@@ -38,12 +45,35 @@ class Find extends Component {
       balance: 0,
       totalReceivedSat: 0,
       action: 'wait',
-      result: [],
+      result: (inMemoryResult instanceof Array) ? inMemoryResult : [],
+      restartAfter: 30,
+      fetched: (inMemoryFetched) ? inMemoryFetched : 0,
     }
   }
 
   componentDidMount() {
+    this.restartTimer = setInterval(() => {
+      let {
+        restartAfter,
+        action,
+      } = this.state
 
+      let doStart = false
+      restartAfter--
+      if (restartAfter === 0) {
+        doStart = true
+      }
+      if (restartAfter <= 0) {
+        restartAfter = -1
+      }
+      this.setState({
+        restartAfter,
+      }, () => {
+        if (doStart && action !== 'wait') {
+          this.handleBegin()
+        }
+      })
+    }, 1000)
   }
 
 
@@ -51,21 +81,29 @@ class Find extends Component {
 
   componentWillUnmount() {
     this.unmounted = true
-
+    clearInterval(this.restartTimer)
   }
 
   onEntry = (data) => {
+    const { fetched } = this.state
+
     this.setState({
       entry: data.entry,
       mnemonic: data.mnemonic,
       address: data.address,
+      fetched: fetched+1
+    }, () => {
+      localStorage.setItem(lsTotalFetched, fetched+1)
     })
   }
 
   onStep = (data) => {
     const { result } = this.state
     if (data.totalReceivedSat > 0) {
-      result.push(data.mnemonic + ` (${data.totalReceivedSat})`)
+      if (result.indexOf(data.mnemonic + ` (${data.totalReceivedSat})`) === -1) {
+        result.push(data.mnemonic + ` (${data.totalReceivedSat})`)
+        localStorage.setItem(lsFouned, result)
+      }
     }
     this.setState({
       result,
@@ -75,13 +113,17 @@ class Find extends Component {
       balance: data.balance,
       totalReceivedSat: data.totalReceivedSat,
     }, () => {
-      setTimeout( this.handleBegin, 1000)
+      const { action } = this.state
+      if (action !== 'wait') {
+        setTimeout( this.handleBegin, 500)
+      }
     })
   }
 
   onError = () => {
     this.setState({
       action: 'error',
+      restartAfter: 30,
     })
   }
   handleBegin = async () => {
@@ -110,6 +152,8 @@ class Find extends Component {
       totalReceivedSat,
       action,
       result,
+      restartAfter,
+      fetched,
     } = this.state
 
     return (
@@ -145,9 +189,10 @@ class Find extends Component {
           Balances:
           <b>{balance}&nbsp;({totalReceivedSat})</b>
         </div>
-        {action === 'wait' && (<button onClick={this.handleBegin}>Begin</button>)}
-        {action === 'work' && (<button onClick={this.handlePause}>Pause</button>)}
-        {action === 'error' && (<button onClick={this.handleBegin}>Retry</button>)}
+        <div>Fetched: {fetched}</div>
+        {action === 'wait' && (<button onClick={this.handleBegin}>[Begin]</button>)}
+        {action === 'work' && (<button onClick={this.handlePause}>[Pause]</button>)}
+        {action === 'error' && (<button onClick={this.handleBegin}>[Api error. Retry after {restartAfter}. Or Click here]</button>)}
         {result.map((item, index) => {
           return (
             <div key={index}>{item}</div>
