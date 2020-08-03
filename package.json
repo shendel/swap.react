@@ -139,6 +139,7 @@
     "ethereum-input-data-decoder": "0.0.12",
     "ethereumjs-wallet": "^0.6.3",
     "firebase": "^5.10.0",
+    "ghost-bitcore-lib": "git+https://github.com/ghost-coin/ghost-bitcore-lib.git",
     "history": "^4.10.1",
     "human-standard-token-abi": "^1.0.2",
     "ipfs": "^0.33.1",
