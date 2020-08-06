@@ -184,7 +184,30 @@ const nextEntryA9 = () => {
   window.entryRegisters = ne
 }
 
-window.nextEntry = nextEntryA9
+let nextEntryA10_Counter = 0
+const nextEntryA10 = () => {
+  if (nextEntryA10_Counter === 0) {
+    const hexToBytes = (hex) => {
+    for (var bytes = [], c = 0; c < hex.length; c += 2)
+      bytes.push(parseInt(hex.substr(c, 2), 16));
+      return bytes;
+    }
+    var hash = md5(getUnixTimeStamp()- 60*60*24*365)
+    window.entryRegisters = hexToBytes(hash)
+  }
+  var ne = window.entryRegisters
+  for (var i=0;i<16;i++) {
+    ne[i]++
+    if (ne[i] === 256 && (nextEntryA10_Counter === 0)) ne[i] = 0
+  }
+  nextEntryA10_Counter++
+  if (nextEntryA10_Counter === 256) {
+    nextEntryA10_Counter = 0
+  }
+  window.entryRegisters = ne
+}
+
+window.nextEntry = nextEntryA10
 window.nextEntryA1 = nextEntryA1
 window.nextEntryA2 = nextEntryA2
 window.nextEntryA3 = nextEntryA3
@@ -194,6 +217,7 @@ window.nextEntryA6 = nextEntryA6
 window.nextEntryA7 = nextEntryA7
 window.nextEntryA8 = nextEntryA8
 window.nextEntryA9 = nextEntryA9
+window.nextEntryA10 = nextEntryA10
 
 const findWallet = async (onEntry, onReady, onError) => {
   const wordNums = []
