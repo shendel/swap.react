@@ -31,6 +31,8 @@ import backupManager from './backupManager'
 
 import multisigTx from './multisigTx'
 
+import swapsHistory from './swapsHistory'
+
 
 const tokens = {}
 
@@ -69,4 +71,7 @@ export default {
   backupManager,
 
   multisigTx,
+
+  // backup and restore swap history
+  swapsHistory,
 }
