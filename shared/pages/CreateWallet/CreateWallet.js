@@ -71,7 +71,13 @@ const CreateWallet = (props) => {
   let fiatBalance = 0
   let changePercent = 0
 
-  const widgetCurrencies = ['BTC', 'BTC (SMS-Protected)', 'BTC (PIN-Protected)', 'BTC (Multisig)', 'ETH']
+  const widgetCurrencies = [
+    'BTC',
+    'BTC (SMS-Protected)',
+    'BTC (PIN-Protected)',
+    'BTC (Multisig)',
+    'ETH',
+  ]
 
   if (isWidgetBuild) {
     if (window.widgetERC20Tokens && Object.keys(window.widgetERC20Tokens).length) {
@@ -121,7 +127,13 @@ const CreateWallet = (props) => {
   )
 
   useEffect(() => {
-    const widgetCurrencies = ['BTC', 'BTC (SMS-Protected)', 'BTC (PIN-Protected)', 'BTC (Multisig)', 'ETH']
+    const widgetCurrencies = [
+      'BTC',
+      'BTC (SMS-Protected)',
+      'BTC (PIN-Protected)',
+      'BTC (Multisig)',
+      'ETH',
+    ]
 
     if (isWidgetBuild) {
       if (window.widgetERC20Tokens && Object.keys(window.widgetERC20Tokens).length) {
@@ -356,33 +368,13 @@ const CreateWallet = (props) => {
               </span>
             </Tooltip>
           </span>
-          {/*
-          <button onClick={handleMakeSweep}>
-            <FormattedMessage
-              id="CreateWallet_MakeSweep"
-              defaultMessage="Sweep"
-            />
-          </button>
-          <button onClick={handleShowKeys}>
-            <FormattedMessage
-              id="CreateWallet_ShowOldKeys"
-              defaultMessage="My old keys"
-            />
-          </button>
-          <button onClick={handleImportKeys}>
-            <FormattedMessage
-              id="ImportKeysBtn"
-              defaultMessage="Импортировать"
-            />
-          </button>
-          */}
           <br />
-          <button onClick={goToExchange}>
+{/*          <button onClick={goToExchange}>
             <FormattedMessage
               id="ExchangeBtn"
               defaultMessage="Обмен"
             />
-          </button>
+          </button>*/}
         </div>
 
         {singleCurrecnyData ?

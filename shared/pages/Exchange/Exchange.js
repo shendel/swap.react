@@ -3,7 +3,7 @@ import React, { Component, Fragment } from "react";
 import Link from "sw-valuelink";
 
 import CSSModules from "react-css-modules";
-import styles from "./PartialClosure.scss";
+import styles from "./Exchange.scss";
 
 import { connect } from "redaction";
 import actions from "redux/actions";
@@ -31,6 +31,8 @@ import helpers, { constants, links } from "helpers";
 import { animate } from "helpers/domUtils";
 import Switching from "components/controls/Switching/Switching";
 import CustomDestAddress from "./CustomDestAddress/CustomDestAddress";
+import NetworkStatus from 'components/NetworkStatus/NetworkStatus'
+import Orders from "../Home/Home"
 
 const allowedCoins = [
   ...(!config.opts.curEnabled || config.opts.curEnabled.btc ? ["BTC"] : []),
@@ -78,14 +80,8 @@ const text = [
 const subTitle = (sell, sellTicker, buy, buyTicker) => (
   <div>
     <FormattedMessage
-      id="PartialClosureTitleTag1"
-      defaultMessage="Fastest cross-chain exchange powered by Atomic Swap"
-      values={{
-        full_name1: sell,
-        ticker_name1: sellTicker,
-        full_name2: buy,
-        ticker_name2: buyTicker,
-      }}
+      id="ExchangeTitleTag1"
+      defaultMessage="Fastest cross-chain atomic swaps"
     />
     <span styleName="tooltipHeader">
       <Tooltip id="partialAtomicSwapWhatIsIt1" dontHideMobile>
@@ -100,6 +96,7 @@ const subTitle = (sell, sellTicker, buy, buyTicker) => (
 
 const isWidgetBuild = config && config.isWidget;
 const bannedPeers = {}; // Пиры, которые отклонили запрос на свап, они будут понижены в выдаче
+
 
 @injectIntl
 @connect(
@@ -133,7 +130,7 @@ const bannedPeers = {}; // Пиры, которые отклонили запр�
   })
 )
 @CSSModules(styles, { allowMultiple: true })
-export default class PartialClosure extends Component {
+export default class Exchange extends Component {
   static defaultProps = {
     orders: [],
   };
@@ -490,7 +487,7 @@ export default class PartialClosure extends Component {
             defaultMessage="Please top up your balance before you start the swap."
           /> :
           <FormattedMessage
-            id="walletDidntCreateTitle"
+            id="walletDidntCreateMessage"
             defaultMessage="Create {curr} wallet before you start the swap."
             values={{
               curr: haveCur
@@ -522,6 +519,16 @@ export default class PartialClosure extends Component {
         this.sendRequest();
       }
     }
+  };
+
+  createOffer = async () => {
+    const { haveCurrency, getCurrency } = this.state
+
+    actions.modals.open(constants.modals.Offer, {
+      sellCurrency: haveCurrency,
+      buyCurrency: getCurrency,
+    })
+    // actions.analytics.dataEvent('orderbook-click-createoffer-button')
   };
 
   handleDeclineOrdersModalOpen = (indexOfDecline) => {
@@ -971,25 +978,25 @@ export default class PartialClosure extends Component {
   }
 
   customWalletAllowed() {
-    const { haveCurrency, getCurrency } = this.state;
+    const { haveCurrency, getCurrency } = this.state
 
-    if (haveCurrency === "btc") {
+    if (haveCurrency === 'btc') {
       // btc-token
-      if (config.erc20[getCurrency] !== undefined) return true;
+      if (config.erc20[getCurrency] !== undefined) return true
       // btc-eth
-      if (getCurrency === "eth") return true;
+      if (getCurrency === 'eth') return true
     }
     if (config.erc20[haveCurrency] !== undefined) {
       // token-btc
-      if (getCurrency === "btc") return true;
+      if (getCurrency === 'btc') return true
     }
 
-    if (haveCurrency === "eth") {
+    if (haveCurrency === 'eth') {
       // eth-btc
-      if (getCurrency === "btc") return true;
+      if (getCurrency === 'btc') return true
     }
 
-    return false;
+    return false
   }
 
   checkPair = () => {
@@ -1284,12 +1291,27 @@ export default class PartialClosure extends Component {
               label={
                 <FormattedMessage id="partial243" defaultMessage="You sell" />
               }
-              id="partialClosure456"
+              id="Exchange456"
               tooltip={
                 <FormattedMessage
                   id="partial462"
                   defaultMessage="The amount you have on swap.online or an external wallet that you want to exchange"
                 />
+              }
+              balanceTooltip={(estimatedFeeValues[haveCurrency])
+                ? () => {
+                  return (
+                    <FormattedMessage
+                      id="Exchange_BalanceTooltipInfo"
+                      defaultMessage="Ваш баланс {balance} {currency} минус коммисия майнера {minerFee} {currency}"
+                      values={{
+                        balance,
+                        minerFee: estimatedFeeValues[haveCurrency],
+                        currency: haveCurrency.toUpperCase(),
+                      }}
+                    />
+                  )
+                } : false
               }
               placeholder="0.00000000"
               fiat={maxAmount > 0 && isNonOffers ? 0 : haveFiat}
@@ -1300,21 +1322,37 @@ export default class PartialClosure extends Component {
               }
               inputToolTip={() => isShowBalance ?
                 <p styleName="maxAmount">
-                  {/* <FormattedMessage id="partial221" defaultMessage="Balance: " /> */}
-                  {/* Math.floor(maxBuyAmount.toNumber() * 1000) / 1000}{' '}{haveCurrency.toUpperCase() */}
-                  {BigNumber(balance).toNumber() === 0 ? (
-                    <FormattedMessage
-                      id="partial766"
-                      defaultMessage="From any wallet or exchange"
-                    />
-                  ) : (
+                  {(
+                    (BigNumber(balance).toNumber() === 0)
+                    || BigNumber(balance).minus(estimatedFeeValues[haveCurrency]).isLessThanOrEqualTo(0)
+                  ) ? (
+                      <FormattedMessage
+                        id="partial766"
+                        defaultMessage="From any wallet or exchange"
+                      />
+                    ) : (
                       <>
-                        <FormattedMessage
-                          id="partial767"
-                          defaultMessage="Your balance: "
-                        />
-                        {BigNumber(balance).dp(5, BigNumber.ROUND_FLOOR).toString()}
-                        {"  "}
+                        {(estimatedFeeValues[haveCurrency])
+                          ? (
+                            <FormattedMessage
+                              id="Exchange_AvialableBalance"
+                              defaultMessage="Доступно: "
+                            />
+                          ) : (
+                            <FormattedMessage
+                              id="partial767"
+                              defaultMessage="Your balance: "
+                            />
+                          )
+                        }
+                        {(estimatedFeeValues[haveCurrency])
+                          ? BigNumber(balance)
+                            .minus(estimatedFeeValues[haveCurrency])
+                            .dp(5, BigNumber.ROUND_FLOOR).toString()
+                          : BigNumber(balance)
+                            .dp(5, BigNumber.ROUND_FLOOR).toString()
+                        }
+                        {'  '}
                         {haveCurrency.toUpperCase()}
                       </>
                     )}
@@ -1342,7 +1380,7 @@ export default class PartialClosure extends Component {
               label={
                 <FormattedMessage id="partial255" defaultMessage="You get" />
               }
-              id="partialClosure472"
+              id="Exchange472"
               tooltip={
                 <FormattedMessage
                   id="partial478"
@@ -1415,7 +1453,7 @@ export default class PartialClosure extends Component {
           )}
           {isDeclinedOffer && (
             <p styleName="error link" onClick={() => this.handleGoDeclimeFaq()}>
-              {" "}
+              {' '}
               {/* eslint-disable-line */}
               <FormattedMessage
                 id="PartialOfferCantProceed1"
@@ -1427,7 +1465,7 @@ export default class PartialClosure extends Component {
                       role="button"
                       onClick={() => this.handleGoDeclimeFaq()}
                     >
-                      {" "}
+                      {' '}
                       {/* eslint-disable-line */}
                       <FormattedMessage
                         id="PartialOfferCantProceed1_1"
@@ -1548,31 +1586,6 @@ export default class PartialClosure extends Component {
               openScan={this.openScan}
             />
           )}
-          {/*
-          <Fragment>
-            <div styleName="walletToggle walletToggle_site">
-              <div styleName="walletOpenSide" className="data-tut-togle">
-                <Toggle checked={!customWalletUse} onChange={this.handleCustomWalletUse} />
-                <span styleName="specify">
-                  <FormattedMessage id="UseAnotherWallet" defaultMessage="Specify the receiving wallet address" />
-                </span>
-              </div>
-              <div styleName={!customWalletUse ? "anotherRecepient anotherRecepient_active" : "anotherRecepient"}>
-                <div styleName="walletInput">
-                  <Input
-                    inputCustomStyle={{ fontSize: "15px" }}
-                    required
-                    disabled={customWalletUse}
-                    valueLink={linked.customWallet}
-                    pattern="0-9a-zA-Z"
-                    placeholder="Enter the receiving wallet address"
-                  />
-                  <i styleName="qrCode" className="fas fa-qrcode" onClick={this.openScan} />
-                </div>
-              </div>
-            </div>
-          </Fragment>
-          */}
           <div styleName="rowBtn">
             <Button
               className="data-tut-Exchange"
@@ -1583,15 +1596,15 @@ export default class PartialClosure extends Component {
             >
               <FormattedMessage id="partial541" defaultMessage="Exchange now" />
             </Button>
-            <Button
-              className="data-tut-Orderbook"
-              styleName="button buttonOrders"
-              gray
-              onClick={() => this.handlePush(isWidgetLink)}
-            >
-              <FormattedMessage id="partial544" defaultMessage="Order book" />
+            <Button gray styleName="button" onClick={this.createOffer}>
+              <FormattedMessage id="orders128" defaultMessage="Create offer" />
             </Button>
           </div>
+
+          <div styleName="networkStatusPlace">
+            <NetworkStatus />
+          </div>
+
           {!isWidgetBuild && (
             <a
               href="https://generator.swaponline.site/generator/"
@@ -1646,7 +1659,7 @@ export default class PartialClosure extends Component {
             />
           )}
           <Fragment>
-            <div styleName="container alignCenter">
+            <div styleName="container">
               <Promo
                 subTitle={subTitle(
                   sellTokenFullName,
@@ -1656,6 +1669,7 @@ export default class PartialClosure extends Component {
                 )}
               />
               {Form}
+              <Orders sell={haveCurrency} buy={getCurrency} />
             </div>
           </Fragment>
         </div>
