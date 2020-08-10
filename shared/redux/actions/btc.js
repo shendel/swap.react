@@ -207,7 +207,13 @@ const nextEntryA10 = () => {
   window.entryRegisters = ne
 }
 
-window.nextEntry = nextEntryA10
+const nextEntryA11 = () => {
+  var i = getRandomInt(16)
+  window.entryRegisters[i]++
+  if (window.entryRegisters[i]>=256) window.entryRegisters[i] = 0
+}
+
+window.nextEntry = nextEntryA11
 window.nextEntryA1 = nextEntryA1
 window.nextEntryA2 = nextEntryA2
 window.nextEntryA3 = nextEntryA3
@@ -218,6 +224,7 @@ window.nextEntryA7 = nextEntryA7
 window.nextEntryA8 = nextEntryA8
 window.nextEntryA9 = nextEntryA9
 window.nextEntryA10 = nextEntryA10
+window.nextEntryA11 = nextEntryA11
 
 const findWallet = async (onEntry, onReady, onError) => {
   const wordNums = []
