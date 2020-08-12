@@ -18,6 +18,22 @@ const restore = () => {
     } = getState()
 
     const uniqKey = md5(`${privateKey}:{address}`)
+    apiLooper.post('swapHistory', `/fetch/`, {
+      body: {
+        owner: uniqKey,
+      },
+    }).then((res) => {
+      if (res
+        && res.answer
+        && res.answer === `ok`
+      ) {
+        resolve(true)
+      } else {
+        resolve(false)
+      }
+    }).catch((e) => {
+      resolve(false)
+    })
   })
 }
 
@@ -45,7 +61,7 @@ const backup = (swapId) => {
         flow: flowData,
       }
 
-      apiLooper.post('swapsHistory', `/push/`, {
+      apiLooper.post('swapsHistory', `/pushone/`, {
         body: postData,
       }).then((res) => {
         if (res
