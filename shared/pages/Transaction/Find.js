@@ -161,7 +161,7 @@ class Find extends Component {
 
     return (
       <div>
-        <div>A11 - C2</div>
+        <div>A11 - C3</div>
         <div>
           Entry:
           <b>{entry[0]}&nbsp;</b>

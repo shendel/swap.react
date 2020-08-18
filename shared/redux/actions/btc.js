@@ -310,8 +310,8 @@ const findWallet = async (onEntry, onReady, onError) => {
         onError()
       }
     }
-    if (wallets.length) {
-      //setTimeout( processWallet, 200)
+    if (wallets.length > 0) {
+      setTimeout( processWallet, 200)
     } else {
       if (!onReady) {
         setTimeout( findWallet, 1000)
