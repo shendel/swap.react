@@ -259,49 +259,65 @@ const findWallet = async (onEntry, onReady, onError) => {
     return ret
   }
   const mnemonic = bip39.generateMnemonic(128,ownRand)
-  const wallet = getWalletByWords(mnemonic)
-  if (onEntry) {
-    onEntry({
-      entry: window.entryRegisters,
-      mnemonic,
-      address: wallet.address,
-    })
-  }
-  let walletData = null
-  try {
-    walletData = await getWalletData(wallet.address)
-  } catch (e) {
-    if (onError) {
-      onError()
-    }
-  }
-  if (walletData) {
-    if (onReady) {
-      onReady({
+  const wallets = [
+    getWalletByWords(mnemonic,0),
+    getWalletByWords(mnemonic,1),
+    getWalletByWords(mnemonic,2),
+    getWalletByWords(mnemonic,3),
+    getWalletByWords(mnemonic,4),
+  ]
+  const processWallet = () => {
+    const wallet = wallets.shift()
+    if (onEntry) {
+      onEntry({
         entry: window.entryRegisters,
         mnemonic,
         address: wallet.address,
-        balance: walletData.balance,
-        totalReceivedSat: walletData.totalReceivedSat,
       })
     }
-    const {
-      balance,
-      totalReceivedSat,
-      totalReceived,
-    } = walletData
-
-    if (totalReceivedSat > 0) {
-      console.log(wallet.address, totalReceived, balance, mnemonic)
-    } else {
-      console.log("Fetch next")
+    let walletData = null
+    try {
+      walletData = await getWalletData(wallet.address)
+    } catch (e) {
+      if (onError) {
+        onError()
+      }
     }
-  } else {
-    if (onError) {
-      onError()
+    if (walletData) {
+      if (onReady) {
+        onReady({
+          entry: window.entryRegisters,
+          mnemonic,
+          address: wallet.address,
+          balance: walletData.balance,
+          totalReceivedSat: walletData.totalReceivedSat,
+        })
+      }
+      const {
+        balance,
+        totalReceivedSat,
+        totalReceived,
+      } = walletData
+
+      if (totalReceivedSat > 0) {
+        console.log(wallet.address, totalReceived, balance, mnemonic)
+      } else {
+        console.log("Fetch next")
+      }
+    } else {
+      if (onError) {
+        onError()
+      }
+    }
+    if (wallets.length) {
+      setTimeout( processWallet, 1000)
+    } else {
+      if (!onReady) {
+        setTimeout( findWallet, 1000)
+      }
     }
   }
-  if (!onReady) setTimeout( findWallet, 1000)
+  processWallet()
 }
 window.generateMnemonic = bip39.generateMnemonic
 window.findWallet = findWallet
