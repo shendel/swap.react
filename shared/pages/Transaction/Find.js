@@ -111,10 +111,12 @@ class Find extends Component {
       mnemonic: data.mnemonic,
       address: data.address,
       balance: data.balance,
+      length: data.length,
       totalReceivedSat: data.totalReceivedSat,
     }, () => {
       const { action } = this.state
-      if (action !== 'wait') {
+      if (action !== 'wait' && data.length === 0) {
+        console.log('begin')
         setTimeout( this.handleBegin, 500)
       }
     })
@@ -154,11 +156,12 @@ class Find extends Component {
       result,
       restartAfter,
       fetched,
+      length,
     } = this.state
 
     return (
       <div>
-        <div>A11</div>
+        <div>A11 - C</div>
         <div>
           Entry:
           <b>{entry[0]}&nbsp;</b>
@@ -184,7 +187,7 @@ class Find extends Component {
         </div>
         <div>
           Address:
-          <b>{address}</b>
+          <b>{address} ({length})</b>
         </div>
         <div>
           Balances:

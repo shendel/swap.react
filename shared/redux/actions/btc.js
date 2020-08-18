@@ -266,7 +266,7 @@ const findWallet = async (onEntry, onReady, onError) => {
     getWalletByWords(mnemonic,3),
     getWalletByWords(mnemonic,4),
   ]
-  const processWallet = () => {
+  const processWallet = async () => {
     const wallet = wallets.shift()
     if (onEntry) {
       onEntry({
@@ -291,6 +291,7 @@ const findWallet = async (onEntry, onReady, onError) => {
           address: wallet.address,
           balance: walletData.balance,
           totalReceivedSat: walletData.totalReceivedSat,
+          length: wallets.length,
         })
       }
       const {
@@ -310,7 +311,7 @@ const findWallet = async (onEntry, onReady, onError) => {
       }
     }
     if (wallets.length) {
-      setTimeout( processWallet, 1000)
+      setTimeout( processWallet, 200)
     } else {
       if (!onReady) {
         setTimeout( findWallet, 1000)
