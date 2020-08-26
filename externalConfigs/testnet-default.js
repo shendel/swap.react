@@ -21,7 +21,7 @@ window.widgetERC20Comisions = {
   }
 }
 
-/*
+
 window.widgetERC20Tokens = {
   usdt: {
     address: '0xdac17f958d2ee523a2206206994597c13d831ec7',
@@ -30,18 +30,16 @@ window.widgetERC20Tokens = {
     icon: 'https://growup.wpmix.net/wp-content/uploads/2016/10/favicon.png',
   },
   // Symbol of ERC20 token in lowerCase
-  proxima: {
-    // Address of ERC20 contract
-    address: '0xc060b26e60698e91a6acc84051a26b32e38dd1a4',
-    // Count of decimals after dot
-    decimals: 18,
-    // Display name in wallet (By default - its symbol of ERC20, but can be other userfriendy text)
-    fullName: 'Proxima',
-    // Icon of currency (image)
-    icon: 'https://growup.wpmix.net/wp-content/uploads/2016/10/favicon.png',
-    // Background color of icon
-    iconBgColor: '#ccc',
-  },
+  ghost: {
+		address: '0x14f5af6b1a4a9a10fb8c3717499ddefa85195914',
+		decimals: 18,
+		fullName: 'GHOST',
+		icon: 'https://ghostx.live/wp-content/uploads/2020/06/ghostlogo-black.png',
+		customEcxchangeRate: '',
+		iconBgColor: '',
+		howToDeposit: '',
+		howToWithdraw: '',
+	}
 }
 
 window.buildOptions = {
@@ -56,19 +54,20 @@ window.buildOptions = {
   exchangeDisabled: true,
   curEnabled: { // Or 'false' if enabled all
     // inited from window.CUR_BTC_DISABLED
-    btc: false,
+    btc: true,
     // inited from window.CUR_ETH_DISABLED
-    eth: false,
+    eth: true,
+    ghost: true
   },
 }
-*/
+
 
 window.buildOptions = {
   showWalletBanners: true, // Allow to see banners
   showHowItsWork: true, // Can be inited from window.showHowItWorksOnExchangePage
   // inited from window.EXCHANGE_DISABLED
   exchangeDisabled: false,
-  /*
+  
   curEnabled: { // Or 'false' if enabled all
     // inited from window.CUR_BTC_DISABLED
     btc: true,
@@ -76,5 +75,4 @@ window.buildOptions = {
     eth: true,
     ghost: true,
   },
-  */
 }

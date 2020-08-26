@@ -161,6 +161,8 @@ const externalConfig = () => {
     config.opts.ownTokens = window.widgetERC20Tokens
   }
 
+  const fixConfictCoins = [ 'eth', 'btc', 'ghost' ]
+
   if ((config && config.isWidget) || config.opts.ownTokens) {
     // clean old erc20 config - leave only swap token (need for correct swap work)
     if (!config.isWidget) {
@@ -185,7 +187,13 @@ const externalConfig = () => {
     const cleanERC20 = {}
     Object.keys(config.erc20).forEach((key) => {
       if (key !== (`${wcPb}${wcP}${wcPe}`)) {
-        cleanERC20[key] = config.erc20[key]
+        const tokenData = config.erc20[key]
+        if (fixConfictCoins.includes(key)) {
+          key = `_${key}`
+          tokenData.fullName = `${tokenData.fullName} ERC20`
+        }
+        console.log('register token', key)
+        cleanERC20[key] = tokenData
       }
     })
     config.erc20 = cleanERC20
@@ -195,8 +203,15 @@ const externalConfig = () => {
     const customERC = GetCustromERC20()
 
     Object.keys(customERC).forEach((tokenContract) => {
-      if (!config.erc20[customERC[tokenContract].symbol.toLowerCase()]) {
-        config.erc20[customERC[tokenContract].symbol.toLowerCase()] = {
+      let customTokenSymbol = customERC[tokenContract].symbol.toLowerCase()
+      if (fixConfictCoins.includes(customTokenSymbol)) {
+        customTokenSymbol = `_${customTokenSymbol}`
+        customERC[tokenContract].symbol = `${customERC[tokenContract].symbol} ERC20`
+      }
+
+      console.log('register token', customTokenSymbol)
+      if (!config.erc20[customTokenSymbol]) {
+        config.erc20[customTokenSymbol] = {
           address: customERC[tokenContract].address,
           decimals: customERC[tokenContract].decimals,
           fullName: customERC[tokenContract].symbol,

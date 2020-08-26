@@ -23,7 +23,6 @@ Object.keys(config.erc20)
     if (!config.opts.curEnabled || config.opts.curEnabled.ghost) swap.push(`${key.toUpperCase()}-GHOST`)
   })
 
-
 if (config && config.isWidget) {
   swap.length = 0
   if (window.widgetERC20Tokens && Object.keys(window.widgetERC20Tokens).length) {

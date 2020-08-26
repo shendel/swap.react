@@ -9,6 +9,8 @@ const GetCustromERC20 = () => {
   return tokensInfo[configStorage]
 }
 
+const fixConfictCoins = [ 'eth', 'btc', 'ghost' ]
+
 let buildOpts = {
   curEnabled: false,
   ownTokens: false,
@@ -102,14 +104,23 @@ const initialState = {
       dontCreateOrder: true,
     }] : [],
     ...(Object.keys(config.erc20)
-      .map(key => ({
-        name: key.toUpperCase(),
-        title: key.toUpperCase(),
-        icon: key,
-        value: key,
-        fullTitle: key,
-        addAssets: true,
-      }))),
+      .map(key => {
+        let title = key.toUpperCase()
+        let name = title
+        let value = key
+        if (fixConfictCoins.includes(key.toLowerCase())) {
+          title = `${title} (ERC20)`
+          value = `_${value}`
+        }
+        return {
+          name,
+          title,
+          icon: key,
+          value,
+          fullTitle: key,
+          addAssets: true,
+        }
+      })),
   ],
   partialItems: [
     ...(!buildOpts.curEnabled || buildOpts.curEnabled.eth) ? [{
@@ -134,13 +145,23 @@ const initialState = {
       fullTitle: 'bitcoin',
     }] : [],
     ...(Object.keys(config.erc20)
-      .map(key => ({
-        name: key.toUpperCase(),
-        title: key.toUpperCase(),
-        icon: key,
-        value: key,
-        fullTitle: key,
-      }))),
+      .map(key => {
+        let title = key.toUpperCase()
+        let name = title
+        let value = key
+        if (fixConfictCoins.includes(key.toLowerCase())) {
+          title = `${title} (ERC20)`
+          value = `_${value}`
+        }
+        return {
+          name,
+          title,
+          icon: key,
+          value,
+          fullTitle: key,
+          addAssets: true,
+        }
+      })),
   ],
   addSelectedItems: [],
   addPartialItems: [],
@@ -192,11 +213,16 @@ if (config.isWidget) {
   // Мульти валюта с обратной совместимостью одиночного билда
   const multiTokenNames = (window.widgetERC20Tokens) ? Object.keys(window.widgetERC20Tokens) : []
 
+
+  console.log('reducer currency')
   if (multiTokenNames.length > 0) {
     // First token in list - is main - fill single-token erc20 config
     config.erc20token = multiTokenNames[0]
     config.erc20[config.erc20token] = window.widgetERC20Tokens[config.erc20token]
+
     multiTokenNames.forEach((key) => {
+      let title = key.toUpperCase()
+      console.log('currency', key)
       initialState.items.push({
         name: key.toUpperCase(),
         title: key.toUpperCase(),
