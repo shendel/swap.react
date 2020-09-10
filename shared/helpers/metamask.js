@@ -9,6 +9,15 @@ import { setMetamask, setDefaultProvider } from 'helpers/web3'
 import WalletConnectProvider from '@walletconnect/web3-provider'
 import Web3 from 'web3'
 import Web3Modal from 'web3modal'
+import { getInjectedProvider } from 'web3modal'
+
+
+
+console.log('getInjectedProvider', getInjectedProvider)
+console.log('injected', getInjectedProvider())
+
+let cachedAddress = ``
+let cachedWeb3 = null
 
 const providerOptions = {
   walletconnect: {
@@ -27,11 +36,36 @@ const web3Modal = new Web3Modal({
 
 const metamaskProvider = (window.ethereum) || false
 
-const isEnabled = () => !(!metamaskProvider)
+const isEnabled = () => true // @ToDo - Remove check in core - always true (connect any external wallets)
 
-const isConnected = () => metamaskProvider && metamaskProvider.selectedAddress && web3Modal.cachedProvider
+const isConnected = () => (web3Modal.cachedProvider)
 
-const getAddress = () => (isConnected()) ? metamaskProvider.selectedAddress : ''
+const getAddress = async () => {
+  if (isConnected()) {
+    if (cachedAddress) return cachedAddress
+
+    if (!cachedWeb3) return ``
+
+    try {
+      await getWeb3()
+
+      console.log(cachedWeb3)
+      const accounts = await cachedWeb3.eth.getAccounts()
+
+      if (accounts
+        && accounts.length > 0
+      ) {
+        cachedAddress = accounts[0]
+      } else {
+        cachedAddress = ``
+      }
+      return (accounts.length > 0) ? accounts[0] : ``
+    } catch (e) {
+      console.log('getAddress error', e)
+    }
+  }
+  return ``
+}
 
 const addWallet = () => {
   _initReduxState()
@@ -41,8 +75,11 @@ const addWallet = () => {
 }
 
 const getWeb3 = async () => {
+  if (cachedWeb3) return cachedWeb3
+
   const provider = await web3Modal.connect();
   const web3 = new Web3(provider)
+  cachedWeb3 = web3
   return web3
 }
 
@@ -77,6 +114,9 @@ const getBalance = () => {
 const disconnect = () => new Promise(async (resolved, reject) => {
   if (isEnabled() && isConnected()) {
     web3Modal.clearCachedProvider()
+    cachedWeb3 = null
+    cachedAddress = null
+
     _initReduxState()
     resolved(true)
   } else {
@@ -85,28 +125,26 @@ const disconnect = () => new Promise(async (resolved, reject) => {
 })
 
 const connect = () => new Promise((resolved, reject) => {
-  if (metamaskProvider
-      && metamaskProvider.enable
-  ) {
-    web3Modal
-      .connect()
-      .then((provider) => {
-        if (isConnected()) {
-          addWallet()
-          setMetamask(getWeb3())
-          resolved(true)
-        } else {
-          setDefaultProvider()
-          resolved(false)
-        }
-      })
-      .catch((e) => {
+
+  web3Modal
+    .connect()
+    .then(async (provider) => {
+      console.log('on connect. web3 provider', provider)
+      await getAddress()
+
+      if (isConnected()) {
+        addWallet()
+        setMetamask(getWeb3())
+        resolved(true)
+      } else {
+        setDefaultProvider()
         resolved(false)
-      })
-  } else {
-    setDefaultProvider()
-    reject(`metamask not enabled`)
-  }
+      }
+    })
+    .catch((e) => {
+      resolved(false)
+    })
+
 })
 
 const _initReduxState = () => {
@@ -158,6 +196,11 @@ const _initReduxState = () => {
       })
     }
   }
+}
+
+const testOurWeb3 = async () => {
+  const provider = await web3Modal.connect()
+  console.log('web provider', provider)
 }
 
 _initReduxState()
