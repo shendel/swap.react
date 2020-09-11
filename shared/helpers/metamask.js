@@ -40,47 +40,40 @@ const isEnabled = () => true // @ToDo - Remove check in core - always true (conn
 
 const isConnected = () => (web3Modal.cachedProvider)
 
-const getAddress = async () => {
-  if (isConnected()) {
-    if (cachedAddress) return cachedAddress
+const cacheAddress = async () => {
+  const _web3 = await getWeb3()
+  const accounts = await _web3.eth.getAccounts()
 
-    if (!cachedWeb3) return ``
-
-    try {
-      await getWeb3()
-
-      console.log(cachedWeb3)
-      const accounts = await cachedWeb3.eth.getAccounts()
-
-      if (accounts
-        && accounts.length > 0
-      ) {
-        cachedAddress = accounts[0]
-      } else {
-        cachedAddress = ``
-      }
-      return (accounts.length > 0) ? accounts[0] : ``
-    } catch (e) {
-      console.log('getAddress error', e)
-    }
+  if (accounts
+    && accounts.length > 0
+  ) {
+    cachedAddress = accounts[0]
+  } else {
+    cachedAddress = ``
   }
+  return cachedAddress
+}
+const getAddress = () => {
+  if (isConnected()) return cachedAddress
   return ``
 }
 
-const addWallet = () => {
-  _initReduxState()
+const addWallet = async () => {
+  await _initReduxState()
   if (isEnabled() && isConnected()) {
     getBalance()
   }
 }
 
 const getWeb3 = async () => {
-  if (cachedWeb3) return cachedWeb3
+  if (cachedWeb3) {
+    return cachedWeb3
+  }
 
   const provider = await web3Modal.connect();
   const web3 = new Web3(provider)
-  cachedWeb3 = web3
-  return web3
+  cachedWeb3 = await web3
+  return cachedWeb3
 }
 
 const getBalance = () => {
@@ -117,7 +110,7 @@ const disconnect = () => new Promise(async (resolved, reject) => {
     cachedWeb3 = null
     cachedAddress = null
 
-    _initReduxState()
+    await _initReduxState()
     resolved(true)
   } else {
     resolved(true)
@@ -129,11 +122,10 @@ const connect = () => new Promise((resolved, reject) => {
   web3Modal
     .connect()
     .then(async (provider) => {
-      console.log('on connect. web3 provider', provider)
-      await getAddress()
+      await cacheAddress()
 
       if (isConnected()) {
-        addWallet()
+        await addWallet()
         setMetamask(getWeb3())
         resolved(true)
       } else {
@@ -147,7 +139,7 @@ const connect = () => new Promise((resolved, reject) => {
 
 })
 
-const _initReduxState = () => {
+const _initReduxState = async () => {
   const {
     user: {
       ethData,
@@ -155,6 +147,7 @@ const _initReduxState = () => {
   } = getState()
 
   if (isEnabled() && isConnected()) {
+    await cacheAddress()
     reducers.user.addWallet({
       name: 'metamaskData',
       data: {
@@ -198,14 +191,10 @@ const _initReduxState = () => {
   }
 }
 
-const testOurWeb3 = async () => {
-  const provider = await web3Modal.connect()
-  console.log('web provider', provider)
-}
-
 _initReduxState()
 if (isEnabled() && isConnected()) {
   setMetamask(getWeb3())
+  cacheAddress()
 }
 
 const metamaskApi = {
