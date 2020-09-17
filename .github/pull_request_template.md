@@ -1,38 +1,17 @@
-# Pull request template
-
 ## Checklist
 
-<!-- You have to tick all the boxes -->
+- [x] I have read the [CONTRIBUTING](https://github.com/swaponline/swap.react/wiki/CONTRIBUTING) guide
+- [x] Styleguide check `npm run validate`
+- [x] Good naming, keep simple
+- [x] Tested desktop/mobile
+- [x] Tested bright/dark
+- [x] Tested en/ru
+- [x] Affects money; I checked the functionality once again
+- [x] I checked the PR once again
 
-- [ ] I have read the [CONTRIBUTING](https://github.com/swaponline/swap.react/wiki/CONTRIBUTING) guide
-- [ ] branch rebased on `develop`
-- [ ] styleguide check `npm run validate`
-- [ ] good naming
-- [ ] keep simple
-- [ ] video or screenshot attached
-- [ ] testing instruction attached
-- [ ] check your PR once again
+### Original issue
+<!-- Type number -->
+#
 
-
-### Description
-
-<!-- Include issue number and motivation for these code changes -->
-
-
-
-
-### Video or screenshot
-
-<!-- Paste video or screenshots -->
-
-
-
-
-### What and how to test
-
-<!-- What reviewer should do? -->
-
-
-
-
-
+### Video / screenshot proof
+<!-- You can use Ctrl+V -->

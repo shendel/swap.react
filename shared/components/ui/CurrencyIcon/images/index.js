@@ -3,10 +3,6 @@ import eth from './eth.svg'
 import icx from './icx.svg'
 import waves from './waves.svg'
 import xrp from './xrp.svg'
-import xlm from './xlm.svg'
-// import bch from './bch.svg'
-import nim from './nim.svg'
-import eos from './eos.svg'
 import swap from './swap.svg'
 import usdt from './usdt.svg'
 import syc2 from './syc2.svg'
@@ -16,20 +12,23 @@ import yup from './yup.svg'
 import kn from './kn.svg'
 import arn from './arn.svg'
 import lev from './lev.svg'
-import ltc from './ltc.svg'
 import bxb from './bxb.svg'
 import dcn from './dcn.svg'
+import pay from './pay.png'
+import eurs from './eurs.svg'
+import ghost from './ghost.svg'
+import next from './next.svg'
 
 
 export default {
   btc,
+  'btc (multisig)': btc,
+  'btc (sms-protected)': btc,
+  'btc (pin-protected)': btc,
   dcn,
   bxb,
   kn,
-  ltc,
-  // bch,
   drt,
-  xlm,
   lev,
   arn,
   omg,
@@ -40,7 +39,9 @@ export default {
   swap,
   waves,
   xrp,
-  eos,
   yup,
-  nim,
+  pay,
+  eurs,
+  ghost,
+  next,
 }

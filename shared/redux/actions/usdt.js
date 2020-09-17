@@ -3,28 +3,28 @@ import { BigNumber } from 'bignumber.js'
 import config from 'app-config'
 import { getState } from 'redux/core'
 import reducers from 'redux/core/reducers'
-import bitcoin from 'bitcoinjs-lib'
-import { btc, request, constants, api } from 'helpers'
+import * as bitcoin from 'bitcoinjs-lib'
+import { btc, apiLooper, constants, api } from 'helpers'
 
 
 const login = (privateKey) => {
   let keyPair
 
   if (privateKey) {
-    const hash  = bitcoin.crypto.sha256(privateKey)
-    const d     = BigInteger.fromBuffer(hash)
+    const hash = bitcoin.crypto.sha256(privateKey)
+    const d = BigInteger.fromBuffer(hash)
 
-    keyPair     = new bitcoin.ECPair(d, null, { network: btc.network })
+    keyPair = bitcoin.ECPair.fromWIF(privateKey, btc.network)
   }
   else {
     console.info('Created account Bitcoin ...')
-    keyPair     = bitcoin.ECPair.makeRandom({ network: btc.network })
-    privateKey  = keyPair.toWIF()
+    keyPair = bitcoin.ECPair.makeRandom({ network: btc.network })
+    privateKey = keyPair.toWIF()
   }
 
-  const account     = new bitcoin.ECPair.fromWIF(privateKey, btc.network) // eslint-disable-line
-  const address     = account.getAddress()
-  const publicKey   = account.getPublicKeyBuffer().toString('hex')
+  const account = bitcoin.ECPair.fromWIF(privateKey, btc.network) // eslint-disable-line
+  const address = account.getAddress()
+  const publicKey = account.getPublicKeyBuffer().toString('hex')
 
   const data = {
     account,
@@ -52,7 +52,7 @@ const getBalance = async () => {
 }
 
 const fetchBalance = (address, assetId = 31) =>
-  request.post(`${config.api.usdt}v1/address/addr/`, {
+  apiLooper.post('usdt', `v1/address/addr/`, {
     body: `addr=${address}`,
   })
     .then(response => {
@@ -95,7 +95,7 @@ const getTransaction = () => {
   const { user: { usdtData: { address } } } = getState()
 
   return new Promise((resolve) => {
-    request.post(`${config.api.usdt}v1/address/addr/details/`, {
+    apiLooper.post('usdt', `v1/address/addr/details/`, {
       body: `addr=${address}`,
     })
       .then((res) => {
@@ -117,7 +117,7 @@ const getTransaction = () => {
 }
 
 const fetchUnspents = (address) =>
-  request.get(`${config.api.bitpay}/addr/${address}/utxo`)
+  apiLooper.get('bitpay', `/addr/${address}/utxo`)
 
 
 const send = ({ from, to, amount } = {}) => {
@@ -126,12 +126,12 @@ const send = ({ from, to, amount } = {}) => {
   return new Promise(async (resolve) => {
     const keyPair = bitcoin.ECPair.fromWIF(privateKey, btc.network)
 
-    const tx              = new bitcoin.TransactionBuilder(btc.network)
-    const unspents        = await fetchUnspents(from)
-    const feeValue        = 5000
-    const sendingValue    = new BigNumber(String(amount)).multipliedBy(1e8).integerValue().toNumber()
-    const totalUnspent    = unspents.reduce((summ, { satoshis }) => summ + satoshis, 0)
-    const skipValue       = totalUnspent - feeValue - 546
+    const tx = new bitcoin.TransactionBuilder(btc.network)
+    const unspents = await fetchUnspents(from)
+    const feeValue = 5000
+    const sendingValue = new BigNumber(String(amount)).multipliedBy(1e8).integerValue().toNumber()
+    const totalUnspent = unspents.reduce((summ, { satoshis }) => summ + satoshis, 0)
+    const skipValue = totalUnspent - feeValue - 546
 
     if (totalUnspent < feeValue + 546) {
       throw new Error(`Total less than fee: ${totalUnspent} < ${546} + ${feeValue}`)
@@ -177,7 +177,7 @@ const createOmniScript = (amount) => {
 
 
 const broadcastTx = (txRaw) =>
-  request.post(`${api.getApiServer('bitpay')}/tx/send`, {
+  apiLooper.post('bitpay', `/tx/send`, {
     body: {
       rawtx: txRaw,
     },

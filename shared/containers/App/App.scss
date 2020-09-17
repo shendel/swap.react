@@ -1,35 +1,13 @@
-.main {
-  position: relative;
-  z-index: 1;
-  padding-bottom: 55px;
-  min-height: calc(100vh - 125px);
-  main {
-    margin-top: 88px;
-  }
-
-  &_widget {
-    main {
-      margin-top: 0;
-    }
-  }
+.compressor {
+  min-width: 320px;
 }
 
-@include media-mobile {
-	.main {
-    padding-bottom: 30px;
+.headerAndMain {
+  position: relative;
+}
 
-    margin-top: 0;
-    margin-bottom: 80px;
-
-    main {
-      margin-top: 0;
-      margin-bottom: 80px;
-    }
-
-    &_widget {
-      main {
-        margin-top: 20px;
-      }
-    }
-	}
+@media all and (max-width: 768px) {
+  .headerAndMain {
+    height: calc(100% + 60px);
+  }
 }

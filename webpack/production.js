@@ -4,6 +4,9 @@ import config from 'app-config'
 
 import path from 'path'
 import CopyWebpackPlugin from 'copy-webpack-plugin'
+import TerserPlugin from 'terser-webpack-plugin-legacy'
+import externalConfig from './externalConfig'
+import WebpackRequireFrom from 'webpack-require-from-naggertooth'
 
 
 export default (webpackConfig) => {
@@ -13,6 +16,11 @@ export default (webpackConfig) => {
     filename: '[name].[hash:6].js',
     chunkFilename: '[id].[hash:6].chunk.js',
     publicPath: config.publicPath,
+  }
+
+  webpackConfig.externals = {
+    'react': 'React',
+    'react-dom' : 'ReactDOM',
   }
 
   webpackConfig.module.rules = webpackConfig.module.rules.map((loader) => {
@@ -26,8 +34,11 @@ export default (webpackConfig) => {
   })
 
   webpackConfig.plugins.push(
-    //  Perhaps it's the cause of errors during the swap process,
-    //  so temporary commented.
+    new TerserPlugin(),
+    new WebpackRequireFrom({
+      variableName: 'publicUrl',
+      suppressErrors: true,
+    }),
     new ExtractTextPlugin({
       filename: '[name].[hash:6].css',
       allChunks: true,
@@ -44,6 +55,7 @@ export default (webpackConfig) => {
         toType: 'file',
       },
     ]),
+    externalConfig(),
   )
 
   return webpackConfig

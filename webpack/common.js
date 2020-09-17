@@ -78,9 +78,14 @@ const webpackConfig = {
     new WebappWebpackPlugin({
       logo: 'favicon.png',
       path: config.base,
+      favicons: {
+        appName: 'Wallet',
+        appDescription: 'Hot wallet',
+      },
     }),
     new HtmlWebpackPlugin({
-      title: 'Swap.Online - Cryptocurrency Wallet with Atomic Swap Exchange',
+      title: 'Hot Wallet with p2p exchange',
+      isWidget: config.isWidget,
       template: config.paths.client('index.html'),
       hash: false,
       filename: 'index.html',

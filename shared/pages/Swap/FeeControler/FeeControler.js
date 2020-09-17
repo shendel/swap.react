@@ -5,15 +5,9 @@ import cssModules from 'react-css-modules'
 
 import CopyToClipboard from 'react-copy-to-clipboard'
 import { FormattedMessage } from 'react-intl'
-import { BigNumber } from 'bignumber.js'
 
 import Button from 'components/controls/Button/Button'
-import Timer from 'components/Timer/Timer'
 
-import config from 'app-config'
-
-
-const isWidgetBuild = config && config.isWidget
 
 @cssModules(styles)
 export default class FeeControler extends Component {
@@ -35,12 +29,12 @@ export default class FeeControler extends Component {
   }
 
   render() {
-    const { ethAddress } = this.props
+    const { ethAddress, gasAmountNeeded } = this.props
     const { isAddressCopied } = this.state
 
     return (
-      <div styleName="main">
-        <CopyToClipboard text={ethAddress} data-tut="reactour__address">
+      <div styleName="FeeController">
+        <CopyToClipboard text={ethAddress}>
           <div>
             <div styleName="warning">
               <i className="fas fa-exclamation-triangle" />
@@ -49,9 +43,10 @@ export default class FeeControler extends Component {
               <h3 styleName="feeHeading">
                 <FormattedMessage
                   id="FeeControler68"
-                  defaultMessage="Not enough ETH on your balance for miner fee.{br}Deposit 0.002 ETH to your account"
+                  defaultMessage="Not enough ETH on your balance for miner fee.{br}{br}Deposit {gasAmountNeeded} ETH to your account"
                   values={{
                     br: <br />,
+                    gasAmountNeeded: <strong>{gasAmountNeeded * 5}</strong>, // 3 = 1 for approving, 4 for creating swap
                   }}
                 />
               </h3>

@@ -5,9 +5,10 @@ import 'firebase/database'
 import 'firebase/firestore'
 import { config } from './config/firebase'
 
+import axios from 'axios'
+
 import actions from 'redux/actions'
 import { getState } from 'redux/core'
-import { request } from 'helpers'
 import moment from 'moment/moment'
 
 import firestoreInstance from './firestore'
@@ -26,22 +27,41 @@ const authorisation = () =>
       .catch((error) => console.log(`Can't sign in: `, error))
   )
 
-const getIPInfo = () =>
-  request
-    .get('https://json.geoiplookup.io')
-    // eslint-disable-next-line camelcase
-    .then(({ ip, country_code }) => ({
-      ip,
-      locale: country_code,
-    }))
-    .catch((error) => {
-      console.error('getIPInfo:', error)
+const getIPInfo = () => {
+  try {
+    return axios
+      .get('https://json.geoiplookup.io')
+      .then((result) => {
+        // eslint-disable-next-line camelcase
+        const { ip, country_code } = result.data
+        // eslint-disable-next-line camelcase
+        if (!ip || !country_code) {
+          return ({
+            ip: 'json.geoiplookup.io didn\'t respond with a result, so setting locale EN by default',
+            locale: 'EN',
+          })
+        }
+        return ({
+          ip,
+          locale: country_code,
+        })
+      })
+      .catch((error) => {
+        console.error('getIPInfo:', error)
 
-      return {
-        ip: 'None',
-        locale: 'EN',
-      }
-    })
+        return {
+          ip: 'None',
+          locale: 'EN',
+        }
+      })
+  } catch (error) {
+    console.error(error)
+  }
+  return {
+    ip: 'None',
+    locale: 'EN',
+  }
+}
 
 const sendData = (userId, dataBasePath, data, isDefault = true) =>
   new Promise(async (resolve) => {
@@ -62,9 +82,10 @@ const sendData = (userId, dataBasePath, data, isDefault = true) =>
 const setUserLastOnline = async () => {
   const userID = await getUserID()
   const data = {
-    lastOnline: moment().format('HH:mm:ss DD/MM/YYYY ZZ'),
+    lastOnline: moment().format('HH:mm:ss DD/MM/YYYY'),
     unixLastOnline: moment().unix(),
     lastUserAgent: navigator.userAgent,
+    lastOnlineDomain: window.top.location.host,
   }
 
   sendData(userID, 'usersCommon', data)
@@ -90,9 +111,7 @@ const initialize = () => {
   const firebaseApp = firebase.initializeApp(config)
   window.firebaseDefaultInstance = firebaseApp
 
-  firebase.firestore(firebaseApp).settings({
-    timestampsInSnapshots: true,
-  })
+  firebase.firestore(firebaseApp)
 
   if (isSupported()) {
     navigator.serviceWorker
@@ -106,6 +125,13 @@ const initialize = () => {
       const message = payload.notification.body
       actions.notifications.show('Message', { message })
     })
+  }
+
+  try {
+    const messaging = firebase.messaging()
+    messaging.usePublicVapidKey('BLiLhKj7Re98YaB0IwfcUpwuYHqosbgjD0OGQojFW2rP5Vj_ncoAwa4NqQ1GQsVJ5EF53hL4u9D5ND_jRzRxhzI')
+  } catch (error) {
+    console.error('Error useVAPID: ', error)
   }
 }
 
@@ -143,27 +169,33 @@ const submitUserDataWidget = async (dataBasePath = 'usersCommon') => {
   if (!isWidgetBuild) {
     return
   }
-  const { user: { ethData: { address: ethAddress }, btcData: { address: btcAddress } } } = getState()
+  const {
+    user: {
+      ethData,
+      btcData,
+      ghostData,
+      nextData,
+    },
+  } = getState()
+
+  const ethAddress = (ethData && ethData.address) ? ethData.address : ``
+  const btcAddress = (btcData && btcData.address) ? btcData.address : ``
+  const ghostAddress = (ghostData && ghostData.address) ? ghostData.address : ``
+  const nextAddress = (nextData && nextData.address) ? nextData.address : ``
 
   return new Promise(async resolve => {
     const userID = await getUserID()
     const data = {
       ethAddress,
       btcAddress,
+      ghostAddress,
+      nextAddress,
     }
     const dataBasePathFormatted = `widgetUsers/${window.top.location.host}/${dataBasePath}`.replace(/[\.\#\$\[\]]/ig, '_') // eslint-disable-line
 
     if (userID) {
       const sendWidgetResultToDefaultDB = await sendData(userID, dataBasePathFormatted, data)
       // const sendResult = await sendData(userID, dataBasePath, data, false) // send to client's firebase
-
-      const sendWidgetDataToFirestore = await firestoreInstance.updateUserData({
-        widgetUrl: window.top.location.host,
-        // eslint-disable-next-line no-useless-escape
-        widgetUrlFromRTDB: window.top.location.host.replace(/[\.\#\$\[\]]/ig, '_'),
-        ethAddress,
-        btcAddress,
-      })
 
       resolve(sendWidgetResultToDefaultDB)
     }
@@ -188,7 +220,6 @@ const signUpWithPush = (data) =>
     })
 
     if (sendResult) {
-      actions.firebase.setSigned()
       actions.analytics.signUpEvent({ action: 'signed', type: 'push' })
     }
     resolve(sendResult)

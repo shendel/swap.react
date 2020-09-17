@@ -20,12 +20,12 @@ import { FormattedMessage } from 'react-intl'
   ({
     currencies,
     addSelectedItems,
-    user: { ethData, btcData, /* bchData, */ tokensData, eosData, telosData, nimData, usdtData, ltcData },
+    user: { ethData, btcData, ghostData, nextData, tokensDat },
   }) => ({
     currencies: currencies.items,
     addSelectedItems: currencies.addSelectedItems[0],
-    items: [ ethData, btcData, eosData, telosData, /* bchData, */ ltcData, usdtData /* nimData */ ],
-    tokenItems: [ ...Object.keys(tokensData).map(k => (tokensData[k])) ],
+    items: [ethData, btcData, ghostData, nextData],
+    tokenItems: [...Object.keys(tokensData).map(k => (tokensData[k]))],
   })
 )
 @CSSModules(styles, { allowMultiple: true })
@@ -71,6 +71,8 @@ export default class CurrencyDirectionChooser extends Component {
       flipCurrency, handleBuyCurrencySelect, handleSellCurrencySelect, handleSubmit,
       currencies, addSelectedItems } = this.props
 
+
+
     return (
       <div styleName="choice">
         <div styleName="row title">
@@ -87,6 +89,7 @@ export default class CurrencyDirectionChooser extends Component {
               <CurrencySelect
                 styleName="currencySelect currencySelectLeft"
                 selectedValue={sellCurrency}
+                selectedItemRender={(item) => item.fullTitle}
                 onSelect={handleSellCurrencySelect}
                 currencies={currencies}
               />
@@ -100,6 +103,7 @@ export default class CurrencyDirectionChooser extends Component {
                 styleName="currencySelect currencySelectRight"
                 selectedValue={buyCurrency}
                 onSelect={handleBuyCurrencySelect}
+                selectedItemRender={(item) => item.fullTitle}
                 currencies={this.chooseProps()}
               />
             </div>

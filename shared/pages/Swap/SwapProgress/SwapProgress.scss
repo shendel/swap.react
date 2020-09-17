@@ -1,6 +1,3 @@
-.overlay {
-  z-index: 1000;
-}
 .container {
   width: 100%;
   position: relative;
@@ -8,6 +5,12 @@
   align-items: center;
   justify-content: flex-end;
   flex-direction: row-reverse;
+}
+
+.dark {
+  .stepHeading {
+    color: #8e9aa3;
+  }
 }
 
 .progress {
@@ -153,6 +156,17 @@ $size: 200px;
   border-bottom: 1px solid #ddd;
 }
 
+.saveSecretKey {
+  display: block;
+  color: #d66f6f;
+  em {
+    display: block;
+    font-size: 0.8rem;
+    font-style: normal;
+    word-wrap: break-word;
+  }
+}
+
 .animated-dots {
   display: inline-block;
   height: 12px;
@@ -202,12 +216,9 @@ $size: 200px;
   text-align: center;
   border: 1px solid #ccc;
   border-radius: 20px;
-  padding-bottom: 60px;
-  height: 510px;
 }
 
 .step {
-  // margin-top: 50px;
   text-align: center;
   padding: 50px;
   padding-bottom: 30px;
@@ -233,25 +244,25 @@ $size: 200px;
 }
 
 .stepInfo {
-  color: #fff;
-  width: 84%;
-  margin: auto;
+  display: flex;
+  flex-direction: column;
+  padding: 0 24px;
 }
 
 .swapInfo {
-  position: absolute;
-  width: 600px;
-  top: -45px;
+  max-width: 600px;
   text-align: center;
   font-size: 18px;
 }
 
 .transaction {
-  // position: absolute;
-  // bottom: 35px;
-  // transform: translateX(-50%);
+  display: block;
+  margin-bottom: 16px;
+  overflow: hidden;
+  text-overflow: ellipsis;
   a {
     font-size: 13px;
+    font-weight: bold;
   }
 }
 
@@ -259,15 +270,22 @@ $size: 200px;
   button {
     display: block;
     margin: auto;
-    margin-bottom: 30px;
   }
+}
+
+.tryAgain {
+  font-size: 12px;
+  color: #d66f6f;
+  margin-top: 10px;
+  font-weight: 600;
 }
 
 .timerRefund {
   color: #000;
+  margin-bottom: 24px;
+
   span {
     display: block;
-    margin-bottom: 20px;
   }
 }
 
@@ -276,23 +294,29 @@ $size: 200px;
   bottom: -80px;
 }
 
-
-.stepHeading {
-  color: #000;
-  font-size: 26px;
-  margin-top: -35px;
-  margin-bottom: 20px;
+.finishButtonsHolder {
+  margin: 16px 0;
+  text-align: center;
+  vertical-align: middle;
+}
+.finishButtonsHolder button {
+  width: 40%;
+  margin-left: 20px;
+  margin-right: 20px;
 }
 
-.stepHeading__inner {
-  margin-top: 0px;
-  bottom: 20px;
-  position: absolute;
-  left: 50%;
-  -webkit-transform: translateX(-50%);
-  transform: translateX(-50%);
-  color: #cccccc;
+.stepHeading {
+  font-size: 26px;
+  font-weight: 500;
+  line-height: 1.2;
+  padding-bottom: 24px;
+}
+
+.dontLeave {
+  margin-bottom: 24px;
+  color: #d66f6f;
   font-size: 15px;
+
   span {
     span {
       color: #000
@@ -309,19 +333,7 @@ $size: 200px;
   display: block;
   position: relative;
   font-size: 13px;
-  margin-bottom: 10px;
-}
-
-.finishButtonsHolder {
-  line-height: 56px;
-  margin-top: 1rem;
-  text-align: center;
-  vertical-align: middle;
-}
-.finishButtonsHolder button {
-  width: 40%;
-  margin-left: 20px;
-  margin-right: 20px;
+  word-wrap: break-word
 }
 
 @include media-tablet {
@@ -340,7 +352,7 @@ $size: 200px;
   }
 }
 
-@media all and (min-width: 320px) and (max-width: 570px) {
+@media all and (max-width: 570px) {
   .ShowBTCScript {
     display: none;
   }
@@ -364,8 +376,6 @@ $size: 200px;
   .stepContainer {
     width: 100%;
     border: none;
-    padding-bottom: 40px;
-    height: auto;
   }
   .stepList {
     padding-top: 0;
@@ -395,27 +405,32 @@ $size: 200px;
     padding-top: 20px;
     width: 100%;
   }
+
   .stepHeading {
     color: #000;
     font-size: 18px;
-  }
-  .transaction {
-    top: -5px;
-    a {
-      font-size: 12px;
-      overflow: hidden;
-      width: 100%;
-      display: block;
-    }
   }
   .stepHeading__inner {
     font-size: 11px;
     width: 100%;
     bottom: 0;
   }
-  .finishButtonsHolder button {
-    width: 90%;
-    margin-left: 0px;
-    margin-right: 0px;
+
+  .finishButtonsHolder {
+
+    & > * {
+      display: block;
+    }
+
+    & > * + * {
+      margin-top: 0.5em;
+    }
+
+    button {
+      width: 90%;
+      margin-left: 0px;
+      margin-right: 0px;
+    }
+
   }
 }

@@ -1,9 +1,10 @@
 const minAmount = {
   eth: 0.001,
   btc: 0.00015,
-  ltc: 0.1,
-  eos: 1,
-  tlos: 1,
+  ghost: 0.00015,
+  next: 0.00015,
+  btc_multisig_2n2: 0.00015,
+  btc_multisig_2fa: 0.00015,
   noxon: 1,
   swap: 1,
   jot: 1,

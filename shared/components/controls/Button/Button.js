@@ -1,25 +1,46 @@
-import React from 'react'
-import PropTypes from 'prop-types'
-import cx from 'classnames'
+import React from "react";
+import PropTypes from "prop-types";
+import { constants } from 'helpers'
+import cx from "classnames";
 
 import cssModules from 'react-css-modules'
 import styles from './Button.scss'
 
-
-const Button = (props) => {
+const isDark = localStorage.getItem(constants.localStorage.isDark)
+const Button = props => {
   const {
-    children, className,
-    fullWidth, brand, green, white, gray, disabled,
-    onClick, id = '', dataTut,
+    children,
+    className,
+    fullWidth,
+    brand,
+    transparent,
+    blue,
+    green,
+    white,
+    gray,
+    disabled,
+    big,
+    autoHeight,
+    onClick,
+    id = '',
+    fill,
+    dataTut,
   } = props
 
   const styleName = cx('button', {
-    'fullWidth': fullWidth,
-    'brand': brand,
-    'green': green,
-    'white': white,
-    'gray': gray,
-    'disabled': disabled,
+    fill,
+    fullWidth,
+    brand,
+    transparent,
+    green,
+    blue,
+    white,
+    gray,
+    big,
+    autoHeight,
+    disabled,
+    "darkTheme-white": isDark && white,
+    "darkTheme-gray": isDark && gray,
   })
 
   return (
@@ -30,6 +51,8 @@ const Button = (props) => {
       onClick={onClick}
       id={id}
       disabled={disabled}
+      data-tip
+      data-for={id}
     >
       {children}
     </button>
@@ -43,6 +66,7 @@ Button.propTypes = {
   brand: PropTypes.bool,
   green: PropTypes.bool,
   white: PropTypes.bool,
+  blue: PropTypes.bool,
   gray: PropTypes.bool,
   disabled: PropTypes.bool,
   onClick: PropTypes.func,

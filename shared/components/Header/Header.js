@@ -1,356 +1,552 @@
-import React, { Component } from 'react'
-import PropTypes from 'prop-types'
+/* eslint-disable max-len */
+import React, { Component } from "react";
+import PropTypes from "prop-types";
+import cx from "classnames";
 
-import { withRouter } from 'react-router-dom'
-import { isMobile } from 'react-device-detect'
-import { connect } from 'redaction'
+import { withRouter, Link } from "react-router-dom";
+import { isMobile } from "react-device-detect";
+import { connect } from "redaction";
 
-import links from 'helpers/links'
-import actions from 'redux/actions'
-import { constants, firebase } from 'helpers'
-import config from 'app-config'
-import { FormattedMessage, defineMessages, injectIntl } from 'react-intl'
-import Tour from 'reactour'
+import links from "helpers/links";
+import actions from "redux/actions";
+import { constants } from "helpers";
+import config from 'helpers/externalConfig'
+import { injectIntl } from "react-intl";
 
-import CSSModules from 'react-css-modules'
-import styles from './Header.scss'
+import CSSModules from "react-css-modules";
+import styles from "./Header.scss";
 
-import Nav from './Nav/Nav'
-import User from './User/User'
-import SignUpButton from './User/SignUpButton/SignUpButton'
-import NavMobile from './NavMobile/NavMobile'
+import Nav from "./Nav/Nav";
+import NavMobile from "./NavMobile/NavMobile";
 
-import LogoTooltip from 'components/Logo/LogoTooltip'
-import WidthContainer from 'components/layout/WidthContainer/WidthContainer'
-import TourPartial from './TourPartial/TourPartial'
+import LogoTooltip from "components/Logo/LogoTooltip";
+import TourPartial from "./TourPartial/TourPartial";
+import WalletTour from "./WalletTour/WalletTour";
+import { WidgetWalletTour } from "./WidgetTours";
 
-import Logo from 'components/Logo/Logo'
-import { relocalisedUrl } from 'helpers/locale'
-import { localisedUrl } from '../../helpers/locale'
-import UserTooltip from 'components/Header/User/UserTooltip/UserTooltip'
+import Loader from "components/loaders/Loader/Loader";
+import { localisedUrl, unlocalisedUrl } from "../../helpers/locale";
+import { messages, getMenuItems, getMenuItemsMobile } from "./config";
+import { getActivatedCurrencies } from "helpers/user";
+import { WidgetHeader } from "./WidgetHeader";
+import { ThemeSwitcher } from "./ThemeSwitcher"
 
-let lastScrollTop = 0
 
-const messages = defineMessages({
-  wallet: {
-    id: 'menu.wallet',
-    description: 'Menu item "Wallet"',
-    defaultMessage: 'Wallet',
-  },
-  exchange: {
-    id: 'menu.exchange',
-    description: 'Menu item "Exchange"',
-    defaultMessage: 'Exchange',
-  },
-  history: {
-    id: 'menu.history',
-    description: 'Menu item "My History"',
-    defaultMessage: 'My History',
-  },
-  aboutus: {
-    id: 'menu.aboutus',
-    description: 'Menu item "About Us"',
-    defaultMessage: 'About Us',
-  },
-})
-
+const isWidgetBuild = config && config.isWidget
+const isDark = localStorage.getItem(constants.localStorage.isDark)
 
 @injectIntl
 @withRouter
 @connect({
-  feeds: 'feeds.items',
-  peer: 'ipfs.peer',
-  isSigned: 'signUp.isSigned',
-  isInputActive: 'inputActive.isInputActive',
+  feeds: "feeds.items",
+  peer: "ipfs.peer",
+  isSigned: "signUp.isSigned",
+  isInputActive: "inputActive.isInputActive",
+  reputation: "ipfs.reputation",
+  dashboardView: "ui.dashboardModalsAllowed",
+  modals: "modals",
+  hiddenCoinsList: "core.hiddenCoinsList",
 })
 @CSSModules(styles, { allowMultiple: true })
 export default class Header extends Component {
-
   static propTypes = {
     history: PropTypes.object.isRequired,
-  }
+  };
 
-  static getDerivedStateFromProps({ history: { location: { pathname } } }) {
-    if  (pathname === '/ru' || pathname === '/') {
-      return { path: true }
+  static getDerivedStateFromProps({
+    history: {
+      location: { pathname },
+    },
+  }) {
+    if (pathname === "/ru" || pathname === "/" || pathname === links.wallet) {
+      return { path: true };
     }
-    return { path: false }
+    return { path: false };
   }
 
   constructor(props) {
-    super(props)
+    super(props);
+
+    const {
+      location: { pathname },
+      intl,
+    } = props;
+    const { exchange, home, wallet, history: historyLink } = links;
+    const { products, invest, history } = messages;
+    const { isWalletCreate } = constants.localStorage;
+
+    const dinamicPath = pathname.includes(exchange)
+      ? `${unlocalisedUrl(intl.locale, pathname)}`
+      : `${home}`;
+    let lsWalletCreated = localStorage.getItem(isWalletCreate);
+    if (config && config.isWidget) lsWalletCreated = true;
+    const isWalletPage = pathname === wallet || pathname === `/ru${wallet}`;
+
     this.state = {
-      optionsForOenSignUpModal: {},
       isPartialTourOpen: false,
       path: false,
       isTourOpen: false,
       isShowingMore: false,
       sticky: false,
-      menuItems: [
+      isWallet: false,
+      menuItemsFill: [
         {
-          title: props.intl.formatMessage(messages.wallet),
-          link: links.home,
+          title: intl.formatMessage(products),
+          link: "openMySesamPlease",
           exact: true,
-          icon: 'wallet',
+          haveSubmenu: true,
+          icon: "products",
+          currentPageFlag: true,
+        },
+        !config.opts.exchangeDisabled && {
+          title: intl.formatMessage(invest),
+          link: "exchange/btc-to-usdt",
+          icon: "invest",
+          haveSubmenu: false,
         },
         {
-          title: props.intl.formatMessage(messages.exchange),
-          link: links.exchange,
-          icon: 'exchange-alt',
-          tour: 'reactour__exchange',
-        },
-        {
-          title: props.intl.formatMessage(messages.history),
-          link: links.history,
-          icon: 'history',
-        },
-        {
-          title: props.intl.formatMessage(messages.aboutus),
-          link: links.aboutus,
-          isMobile: false,
+          title: intl.formatMessage(history),
+          link: historyLink,
+          icon: "history",
+          haveSubmenu: false,
         },
       ],
-    }
-    this.lastScrollTop = 0
+      menuItems: getMenuItems(props, lsWalletCreated, dinamicPath),
+      menuItemsMobile: getMenuItemsMobile(props, lsWalletCreated, dinamicPath),
+      createdWalletLoader: isWalletPage && !lsWalletCreated,
+    };
+    this.lastScrollTop = 0;
   }
 
   componentDidMount() {
-    window.addEventListener('scroll', this.handleScroll)
+    this.handlerAsync();
+  }
 
-    const checker = setInterval(() => {
-      switch (true) {
-        case !localStorage.getItem(constants.localStorage.wasOnExchange):
-        case !localStorage.getItem(constants.localStorage.wasOnWallet):
-          this.startTourAndSignInModal()
-          break
-        default:
-          clearInterval(checker)
+  handlerAsync = async () => {
+    const { history } = this.props;
+
+    await this.tapCreateWalletButton();
+
+    this.startTourAndSignInModal();
+
+    history.listen(async (location) => {
+      await this.tapCreateWalletButton({ location });
+
+      this.startTourAndSignInModal({ location });
+    });
+  };
+
+  tapCreateWalletButton = (customProps) =>
+    new Promise((resolve) => {
+      const finishProps = { ...this.props, ...customProps };
+
+      const { location, intl } = finishProps;
+      const { pathname } = location;
+      const { wallet, home } = links;
+
+      let isWalletCreate = localStorage.getItem(
+        constants.localStorage.isWalletCreate
+      );
+
+      if (config && config.isWidget) isWalletCreate = true;
+
+      const isWalletPage = pathname === wallet || pathname === `/ru${wallet}`;
+
+      if (isWalletPage && !isWalletCreate) {
+        isWalletCreate = true;
+
+        this.setState(
+          () => ({
+            menuItems: getMenuItems(this.props, isWalletCreate),
+            menuItemsMobile: getMenuItemsMobile(this.props, isWalletCreate),
+            createdWalletLoader: true,
+          }),
+          () => {
+            setTimeout(() => {
+              this.setState(() => ({
+                createdWalletLoader: false,
+              }));
+              resolve();
+            }, 4000);
+          }
+        );
+      } else {
+        resolve();
       }
-    }, 3000)
-  }
+    });
 
-  componentWillUnmount() {
-    window.removeEventListener('scroll', this.handleScroll)
-    this.startTourAndSignInModal()
-
-  }
-
-  startTourAndSignInModal = () => {
-    // if (!process.env.MAINNET || config.isWidget) {
-    //   return
-    // }
-
-    const currentUrl = this.props.history.location
-    const isGuestLink = !(!currentUrl.hash
-      || currentUrl.hash.slice(1) !== 'guest')
+  startTourAndSignInModal = (customProps) => {
+    const finishProps = { ...this.props, ...customProps };
+    const {
+      wasOnExchange,
+      wasOnWallet,
+      isWalletCreate,
+      wasOnWidgetWallet,
+    } = constants.localStorage;
+    const {
+      hiddenCoinsList,
+      location: { hash, pathname },
+    } = finishProps;
+    const { wallet, exchange } = links;
+    const isGuestLink = !(!hash || hash.slice(1) !== "guest");
 
     if (isGuestLink) {
-      localStorage.setItem(constants.localStorage.wasOnWallet, true)
-      localStorage.setItem(constants.localStorage.wasOnExchange, true)
-
-      return
+      localStorage.setItem(wasOnWallet, true);
+      localStorage.setItem(wasOnExchange, true);
+      localStorage.setItem(wasOnWidgetWallet, true);
+      return;
     }
 
-    const isStartPage = currentUrl.pathname === '/' || currentUrl.pathname === '/ru'
-    const isPartialPage = currentUrl.pathname.includes('/exchange/')
-    const didOpenSignUpModal = localStorage.getItem(constants.localStorage.didOpenSignUpModal)
-    const wasOnWallet = localStorage.getItem(constants.localStorage.wasOnWallet)
-    const wasOnExchange = localStorage.getItem(constants.localStorage.wasOnExchange)
+    this.setState(() => ({
+      menuItems: getMenuItems(this.props, true),
+      menuItemsMobile: getMenuItemsMobile(this.props, true),
+    }));
+
+    const path = pathname.toLowerCase();
+    const isWalletPage =
+      path.includes(wallet) || path === `/` || path === "/ru";
+    const isPartialPage = path.includes(exchange) || path === `/ru${exchange}`;
+
+    const didOpenWalletCreate = localStorage.getItem(isWalletCreate);
+
+    const wasOnWalletLs = localStorage.getItem(wasOnWallet);
+    const wasOnExchangeLs = localStorage.getItem(wasOnExchange);
+    const wasOnWidgetWalletLs = localStorage.getItem(wasOnWidgetWallet);
+
+    let tourEvent = () => { };
+
+    const allData = actions.core.getWallets();
+
+    const widgetCurrencies = ["BTC", "ETH"];
+    const optionsalCur = [
+      "BTC (SMS-Protected)",
+      "BTC (Multisig)",
+      "BTC (PIN-Protected)",
+    ];
+
+    optionsalCur.forEach((el) => {
+      if (!hiddenCoinsList.includes(el)) {
+        widgetCurrencies.push(el);
+      }
+    });
+
+    if (isWidgetBuild) {
+      if (
+        window.widgetERC20Tokens &&
+        Object.keys(window.widgetERC20Tokens).length
+      ) {
+        // Multi token widget build
+        Object.keys(window.widgetERC20Tokens).forEach((key) => {
+          widgetCurrencies.push(key.toUpperCase());
+        });
+      } else {
+        widgetCurrencies.push(config.erc20token.toUpperCase());
+      }
+    }
+
+    let userCurrencies = allData.filter(({ currency, address, balance }) => {
+      return (
+        (!hiddenCoinsList.includes(currency) &&
+          !hiddenCoinsList.includes(`${currency}:${address}`)) ||
+        balance > 0
+      );
+    });
+
+    if (isWidgetBuild) {
+      userCurrencies = allData.filter(
+        ({ currency, address }) =>
+          !hiddenCoinsList.includes(currency) &&
+          !hiddenCoinsList.includes(`${currency}:${address}`)
+      );
+      userCurrencies = userCurrencies.filter(({ currency }) =>
+        widgetCurrencies.includes(currency)
+      );
+    }
+
+    userCurrencies = userCurrencies.filter(({ currency }) =>
+      getActivatedCurrencies().includes(currency)
+    );
 
     switch (true) {
-      case isStartPage && !wasOnWallet:
-        this.startTourInNeed(didOpenSignUpModal, this.openWalletTour)
-        localStorage.setItem(constants.localStorage.wasOnWallet, true)
-        break
-      case isPartialPage && !wasOnExchange:
-        this.startTourInNeed(didOpenSignUpModal, this.openExchangeTour)
-        localStorage.setItem(constants.localStorage.wasOnExchange, true)
-        break
-      default: return
+      case isWalletPage && !wasOnWalletLs:
+        tourEvent = this.openWalletTour;
+        break;
+      case isPartialPage && !wasOnExchangeLs:
+        tourEvent = this.openExchangeTour;
+        break;
+      case isWidgetBuild && !wasOnWidgetWalletLs:
+        tourEvent = this.openWidgetWalletTour;
+        break;
+      case !userCurrencies.length && isWalletPage:
+        this.openCreateWallet({ onClose: tourEvent });
+        break;
+      default:
+        return;
     }
 
-    if (!didOpenSignUpModal) {
-      this.openSignUpModal(this.state.optionsForOenSignUpModal)
-    }
-  }
-
-  startTourInNeed = (didOpenSignUpModal, inNeedTourStarter) => {
-    if (!didOpenSignUpModal) {
-      this.optionsForOenSignUpModal(inNeedTourStarter)
-    } else {
-      inNeedTourStarter()
-    }
-  }
-
-  optionsForOenSignUpModal(inNeedTourStarter) {
-    this.setState(() => ({
-      optionsForOenSignUpModal: { onClose: inNeedTourStarter },
-    }))
-  }
-
-  declineRequest = (orderId, participantPeer) => {
-    actions.core.declineRequest(orderId, participantPeer)
-    actions.core.updateCore()
-  }
-
-  acceptRequest = async (orderId, participantPeer, link) => {
-    const { toggle, history, intl: { locale } } = this.props
-
-    actions.core.acceptRequest(orderId, participantPeer)
-    actions.core.updateCore()
-
-    if (typeof toggle === 'function') {
-      toggle()
+    if (!didOpenWalletCreate && isWalletPage) {
+      this.openCreateWallet({ onClose: tourEvent });
+      return;
     }
 
-    await history.replace(localisedUrl(locale, link))
-    await history.push(localisedUrl(locale, link))
-  }
+    tourEvent();
+  };
 
-  handleScroll = () =>  {
-    if (this.props.history.location.pathname === '/') {
-      this.setState(() => ({ sticky: false }))
-      return
+  handleScroll = () => {
+    if (this.props.history.location.pathname === "/") {
+      this.setState(() => ({
+        sticky: false,
+      }));
+      return;
     }
-    let scrollTop = window.pageYOffset || document.documentElement.scrollTop
+    let scrollTop = window.pageYOffset || document.documentElement.scrollTop;
     if (scrollTop > this.lastScrollTop) {
-      this.setState(() => ({ sticky: false }))
+      this.setState(() => ({ sticky: false }));
+    } else {
+      this.setState(() => ({ sticky: true }));
     }
-    else {
-      this.setState(() => ({ sticky: true }))
-    }
-    this.lastScrollTop = scrollTop
-  }
+    this.lastScrollTop = scrollTop;
+  };
 
   toggleShowMore = () => {
-    this.setState(prevState => ({
+    this.setState((prevState) => ({
       isShowingMore: !prevState.isShowingMore,
-    }))
-  }
+    }));
+  };
 
   closeTour = () => {
-    this.setState({ isTourOpen: false })
-  }
+    this.setState(() => ({ isTourOpen: false }));
+  };
 
-  openSignUpModal = (options) => {
-    localStorage.setItem(constants.localStorage.didOpenSignUpModal, true)
-    actions.modals.open(constants.modals.SignUp, options)
-  }
+  closeWidgetTour = () => {
+    this.setState(() => ({ isWidgetTourOpen: false }));
+  };
+
+  closePartialTour = () => {
+    this.setState(() => ({ isPartialTourOpen: false }));
+  };
+
+  openCreateWallet = (options) => {
+    const {
+      history,
+      intl: { locale },
+    } = this.props;
+    history.push(localisedUrl(locale, links.createWallet));
+  };
 
   openWalletTour = () => {
-    this.setState({ isTourOpen: true })
-    console.warn('work!')
+    const { wasOnWallet } = constants.localStorage;
 
-  }
+    setTimeout(() => {
+      this.setState(() => ({ isTourOpen: true }));
+    }, 1000);
+    localStorage.setItem(wasOnWallet, true);
+  };
+
+  openWidgetWalletTour = () => {
+    const { wasOnWidgetWallet } = constants.localStorage;
+
+    setTimeout(() => {
+      this.setState(() => ({ isWidgetTourOpen: true }));
+    }, 1000);
+    localStorage.setItem(wasOnWidgetWallet, true);
+  };
 
   openExchangeTour = () => {
-    this.setState({ isPartialTourOpen: true })
+    const { wasOnExchange } = constants.localStorage;
+    setTimeout(() => {
+      this.setState(() => ({ isPartialTourOpen: true }));
+    }, 1000);
+
+    localStorage.setItem(wasOnExchange, true);
+  };
+
+  handleSetDark = () => {
+    this.setState(() => ({ themeSwapAnimation: true }))
+    if (localStorage.getItem(constants.localStorage.isDark)) {
+      localStorage.removeItem(constants.localStorage.isDark);
+    } else {
+      localStorage.setItem(constants.localStorage.isDark, true);
+    }
+    window.location.reload();
   }
 
   render() {
+    const {
+      sticky,
+      isTourOpen,
+      path,
+      isPartialTourOpen,
+      menuItems,
+      menuItemsMobile,
+      createdWalletLoader,
+      isWidgetTourOpen,
+      themeSwapAnimation
+    } = this.state;
+    const {
+      intl: { formatMessage, locale },
+      history: {
+        location: { pathname },
+      },
+      feeds,
+      peer,
+      isSigned,
+      isInputActive,
+    } = this.props;
 
-    const { sticky, menuItems, isTourOpen, isShowingMore, path, isPartialTourOpen } = this.state
-    const { intl: { locale }, history, pathname, feeds, peer, isSigned, isInputActive } = this.props
+    const { exchange, wallet } = links;
+    const onLogoClickLink =
+      window && window.LOGO_REDIRECT_LINK
+        ? window.LOGO_REDIRECT_LINK
+        : localisedUrl(locale, links.home);
+    const hasOwnLogoLink = window && window.LOGO_REDIRECT_LINK;
 
-    const accentColor = '#510ed8'
+    const isWalletPage =
+      pathname.includes(wallet) ||
+      pathname === `/ru${wallet}` ||
+      pathname === `/`;
 
-    if (config && config.isWidget) {
+    const isExchange = pathname.includes(exchange);
+
+    const imgNode = (
+      <img
+        styleName="otherHeaderLogo"
+        onClick={this.handleGoHome}
+        className="site-logo-header"
+        src={isDark ? window.darkLogoUrl : window.logoUrl}
+        alt="logo"
+      />
+    );
+
+    const isOurMainDomain = [
+      'localhost',
+      'swaponline.github.io',
+      'swaponline.io'
+    ].includes(window.location.hostname)
+
+    const logoRenderer = isOurMainDomain ?
+      <>
+        <LogoTooltip withLink isColored isExchange={isWalletPage} />
+        <ThemeSwitcher themeSwapAnimation={themeSwapAnimation} onClick={this.handleSetDark} />
+      </>
+      :
+      <div styleName="flexebleHeader">
+        {window.logoUrl !== "#" && (
+          <div styleName="imgWrapper">
+            {hasOwnLogoLink ? (
+              <a href={onLogoClickLink}>{imgNode}</a>
+            ) : (
+                <Link to={onLogoClickLink}>{imgNode}</Link>
+              )}
+          </div>
+        )}
+        <div styleName="rightArea">
+          {isWidgetBuild && <WidgetHeader />}
+          <ThemeSwitcher withExit themeSwapAnimation={themeSwapAnimation} onClick={this.handleSetDark} />
+        </div>
+      </div>
+
+    if (pathname.includes("/createWallet") && isMobile) {
+      return <span />;
+    }
+
+    if (isMobile && window.logoUrl) {
       return (
-        <User
-          acceptRequest={this.acceptRequest}
-          declineRequest={this.declineRequest} />
-      )
+        <header className="data-tut-widget-tourFinish" id="header-mobile" styleName="header-mobile">
+          {logoRenderer}
+          {createdWalletLoader && (
+            <div styleName="loaderCreateWallet">
+              <Loader
+                showMyOwnTip={formatMessage({
+                  id: "createWalletLoaderTip",
+                  defaultMessage: "Creating wallet... Please wait.",
+                })}
+              />
+            </div>
+          )}
+          <NavMobile menu={menuItemsMobile} isHidden={isInputActive} />
+          {isWidgetTourOpen && isWalletPage &&
+            <div styleName="walletTour">
+              <WidgetWalletTour
+                isTourOpen={isWidgetTourOpen}
+                closeTour={this.closeWidgetTour}
+              />
+            </div>
+          }
+        </header>
+      );
     }
 
     if (isMobile) {
       return (
-        <div styleName={isInputActive ? 'header-mobile header-mobile__hidden' : 'header-mobile'}>
-          <UserTooltip
-            feeds={feeds}
-            peer={peer}
-            acceptRequest={this.acceptRequest}
-            declineRequest={this.declineRequest}
-          />
-          <NavMobile menu={menuItems} />
-          {!isSigned && (<SignUpButton mobile />)}
-        </div>
-      )
+        <header id="header-mobile" styleName="header-mobile">
+          {createdWalletLoader && (
+            <div styleName="loaderCreateWallet">
+              <Loader
+                showMyOwnTip={formatMessage({
+                  id: "createWalletLoaderTip",
+                  defaultMessage: "Creating wallet... Please wait.",
+                })}
+              />
+            </div>
+          )}
+          <NavMobile menu={menuItemsMobile} isHidden={isInputActive} />
+          {isWidgetTourOpen && isWalletPage &&
+            <div styleName="walletTour">
+              <WidgetWalletTour
+                isTourOpen={isWidgetTourOpen}
+                closeTour={this.closeWidgetTour}
+              />
+            </div>
+          }
+          <ThemeSwitcher themeSwapAnimation={themeSwapAnimation} onClick={this.handleSetDark} />
+        </header>
+      );
     }
 
     return (
-      <div styleName={sticky ? 'header header-fixed' : 'header'}>
-        <WidthContainer styleName="container">
-          <LogoTooltip withLink />
-          <Nav menu={menuItems} />
-          <Logo withLink mobile />
-          <TourPartial isTourOpen={this.state.isPartialTourOpen} />
-          <User
-            openTour={this.openWalletTour}
-            path={path}
-            acceptRequest={this.acceptRequest}
-            declineRequest={this.declineRequest}
-          />
-          <Tour
-            steps={tourSteps}
-            onRequestClose={this.closeTour}
-            isOpen={isTourOpen}
-            maskClassName="mask"
-            className="helper"
-            accentColor={accentColor}
-          />
-        </WidthContainer>
-      </div>
-    )
+      <header
+        className={cx({
+          [styles["header"]]: true,
+          [styles["widgetHeader"]]: isWidgetBuild && window.logoUrl !== "#",
+          [styles["header-fixed"]]: Boolean(sticky),
+          [styles["header-promo"]]: isWalletPage && !sticky,
+        })}
+      >
+        {createdWalletLoader && (
+          <div styleName="loaderCreateWallet">
+            <Loader
+              showMyOwnTip={formatMessage({
+                id: "createWalletLoaderTip",
+                defaultMessage: "Creating wallet... Please wait.",
+              })}
+            />
+          </div>
+        )}
+        {logoRenderer}
+        <Nav menu={menuItems} />
+        {isPartialTourOpen && isExchange && (
+          <div styleName="walletTour">
+            <TourPartial
+              isTourOpen={isPartialTourOpen}
+              closeTour={this.closePartialTour}
+            />
+          </div>
+        )}
+        {isTourOpen && isWalletPage &&
+          <div styleName="walletTour">
+            <WalletTour isTourOpen={isTourOpen} closeTour={this.closeTour} />
+          </div>
+        }
+        {isWidgetTourOpen && isWalletPage &&
+          <div styleName="walletTour">
+            <WidgetWalletTour
+              isTourOpen={isWidgetTourOpen}
+              closeTour={this.closeWidgetTour}
+            />
+          </div>
+        }
+      </header>
+    );
   }
 }
-const tourSteps = [
-  {
-    selector: '[data-tut="reactour__address"]',
-    content: <FormattedMessage
-      id="Header184"
-      defaultMessage="This is your personal bitcoin address. We do not store your private keys. Everything is kept in your browser. No server, no back-end, completely decentralized. " />,
-  },
-  {
-    selector: '[data-tut="reactour__save"]',
-    content: <FormattedMessage id="Header188" defaultMessage="Swap Online does NOT store your private keys, please download and keep them in a secured place" />,
-  },
-  {
-    selector: '[data-tut="reactour__balance"]',
-    content: <FormattedMessage id="Header192" defaultMessage="This is your bitcoin balance. You can close your browser, reboot your computer. Your funds will remain safe, just don't forget to save your private keys" />,
-  },
-  {
-    selector: '[data-tut="reactour__store"]',
-    content: <FormattedMessage id="Header196" defaultMessage="You can store crypto of different blockchains including Bitcoin, Ethereum, EOS, Bitcoin Cash, Litecoin and various token" />,
-  },
-  {
-    selector: '[data-tut="reactour__exchange"]',
-    content: <FormattedMessage id="Header200" defaultMessage="Our killer feature is the peer-to-peer exchange available in our wallet powered by atomic swap technology. You can perfrom swaps with any crypto listed in our wallet." />,
-  },
-  {
-    selector: '[data-tut="reactour__sign-up"]',
-    content: <FormattedMessage
-      id="Header205"
-      defaultMessage="You will receive notifications regarding updates with your account (orders, transactions) and monthly updates about our project" />,
-  },
-  {
-    selector: '[data-tut="reactour__goTo"]',
-    content: ({ goTo }) => (
-      <div>
-        <strong><FormattedMessage id="Header194" defaultMessage="Do not forget to save your keys" /></strong>
-        <button
-          style={{
-            border: '1px solid #f7f7f7',
-            background: 'none',
-            padding: '.3em .7em',
-            fontSize: 'inherit',
-            display: 'block',
-            cursor: 'pointer',
-            margin: '1em auto',
-          }}
-          onClick={() => goTo(1)}
-        >
-          <FormattedMessage id="Header207" defaultMessage="show how to save" />
-        </button>
-      </div>),
-  },
-]

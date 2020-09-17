@@ -4,6 +4,7 @@ const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPl
 
 import path from 'path'
 import CopyWebpackPlugin from 'copy-webpack-plugin'
+import externalConfig from './externalConfig'
 
 
 export default (webpackConfig) => {
@@ -39,6 +40,7 @@ export default (webpackConfig) => {
         toType: 'file',
       },
     ]),
+    externalConfig(),
   )
 
   return webpackConfig

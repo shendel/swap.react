@@ -11,26 +11,23 @@ import ReactTooltip from 'react-tooltip'
 import { FormattedMessage } from 'react-intl'
 
 
-@connect(({ user: { ethData, btcData, eosData, telosData } }) => ({
-  btcData, ethData, eosData, telosData,
-}))
+@connect(({ user: { ethData, btcData, ghostData, nextData } }) => ({ btcData, ethData, ghostData, nextData }))
 @CSSModules(styles)
 export default class SaveKeys extends Component {
   render() {
-    const { ethData, btcData, eosData, telosData, isChange, isDownload, ...otherProps } = this.props
+    const { ethData, btcData, ghostData, nextData, isChange, isDownload, ...otherProps } = this.props
 
     return (
       <div {...otherProps}>
         <div styleName="title" >
           <FormattedMessage
             id="SaveKeys235"
-            defaultMessage={`These are your private keys.{br}Download the keys by clicking on the button
-              {br}or take a screenshot of this page, then confirm it and click here.`}
+            defaultMessage={`These are your private keys.Download the keys by clicking on the button
+              or take a screenshot of this page, then confirm it and click here.`}
             values={{ br: <br /> }} />
-          <span styleName="linked" onClick={isChange}>
-            <FormattedMessage id="SaveKeys26" defaultMessage="I saved the keys in a safe place" />
-            <br />
-          </span>
+        </div>
+        <div styleName="linked" onClick={isChange}>
+          <FormattedMessage id="SaveKeys26" defaultMessage="I saved the keys in a safe place" />
         </div>
         <div styleName="row" >
           <Button brand onClick={isDownload} data-tip data-for="Download">
@@ -50,18 +47,14 @@ export default class SaveKeys extends Component {
               label={btcData.currency}
               privateKey={btcData.privateKey.toString()}
             />
-            { typeof eosData.masterPrivateKey === 'string' &&
-              <Field
-                label={eosData.currency}
-                privateKey={eosData.masterPrivateKey.toString()}
-              />
-            }
-            { typeof telosData.activePrivateKey === 'string' &&
-              <Field
-                label={telosData.currency}
-                privateKey={telosData.activePrivateKey.toString()}
-              />
-            }
+            <Field
+              label={ghostData.currency}
+              privateKey={ghostData.privateKey.toString()}
+            />
+            <Field
+              label={nextData.currency}
+              privateKey={nextData.privateKey.toString()}
+            />
           </div>
         </div>
       </div>

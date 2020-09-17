@@ -1,4 +1,3 @@
-
 import path from 'path'
 
 
@@ -13,13 +12,13 @@ const config = {
     base:     (file = '') => path.join(basePath, file),
     shared:   (file = '') => path.join(basePath, 'shared', file),
     client:   (file = '') => path.join(basePath, 'client', file),
-    swapCore: (file = '') => path.join(basePath, 'swap.core', file),
+    swapCore: (file = '') => process.env.SWAP_CORE_PATH ? path.join(process.env.SWAP_CORE_PATH, file) : path.join(basePath, 'swap.core', file),
   },
 
   publicPath: '/',
 
   http: {
-    host: 'localhost',
+    host: process.env.HOST || 'localhost',
     port: process.env.PORT || 9001,
   },
 

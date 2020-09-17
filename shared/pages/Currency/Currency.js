@@ -1,7 +1,7 @@
 import React, { Component, Fragment } from 'react'
 
 import { connect } from 'redaction'
-import { constants } from 'helpers'
+import { constants, links } from 'helpers'
 import { isMobile } from 'react-device-detect'
 import { withRouter } from 'react-router'
 import actions from 'redux/actions'
@@ -27,10 +27,10 @@ import CloseIcon from 'components/ui/CloseIcon/CloseIcon'
 @withRouter
 @connect(({
   core: { hiddenCoinsList },
-  user: { ethData, btcData, ltcData, tokensData, telosData, eosData, nimData, usdtData } }) => ({
-  items: [ ethData, btcData, eosData, usdtData, telosData, ltcData, ...Object.keys(tokensData).map(k => (tokensData[k])) /* nimData */ ],
-  hiddenCoinsList,
-}))
+  user: { ethData, btcData, ghostData, nextData, tokensData } }) => ({
+    items: [ethData, btcData, ghostData, nextData, ...Object.keys(tokensData).map(k => (tokensData[k]))],
+    hiddenCoinsList,
+  }))
 @CSSModules(styles, { allowMultiple: true })
 export default class Currency extends Component {
 
@@ -51,12 +51,16 @@ export default class Currency extends Component {
   }
 
   componentDidMount() {
+    console.log('Currency mounted')
     this.handleReloadBalance()
   }
 
+  componentWillUnmount() {
+    console.log('Currency unmounted')
+  }
 
   getRows = () => {
-    let { match:{ params: { currency, address } }, items } = this.props
+    let { match: { params: { currency, address } }, items } = this.props
     currency = currency.toLowerCase()
 
     return constants.tradeTicker
@@ -79,7 +83,7 @@ export default class Currency extends Component {
   getCoin = () => [...this.props.items, ...this.props.tokens].find(coin => coin.currency.toLowerCase() === this.getCurrencyName())
 
   handleReloadBalance = async () => {
-    let { match:{ params: { currency } } } = this.props
+    let { match: { params: { currency } } } = this.props
     currency = currency.toLowerCase()
 
     const balance = await actions[currency].getBalance(currency)
@@ -95,11 +99,11 @@ export default class Currency extends Component {
 
   isInWallet = () => !this.props.hiddenCoinsList.includes(this.getCoin().currency)
 
-  handleInWalletChange = (val) => val ? actions.core.markCoinAsVisible(this.getCoin().currency) :
-    actions.core.markCoinAsHidden(this.getCoin().currency)
+  handleInWalletChange = (val) => val ? actions.core.markCoinAsVisible(this.getCoin().currency, true) :
+    actions.core.markCoinAsHidden(this.getCoin().currency, true)
 
   handleReceive = () => {
-    let { match:{ params: { currency } }, items } = this.props
+    let { match: { params: { currency } }, items } = this.props
     const itemCurrency = items.filter(item => item.currency.toLowerCase() === currency)[0]
     const { address } = itemCurrency
 
@@ -112,7 +116,7 @@ export default class Currency extends Component {
   }
 
   handleWithdraw = () => {
-    let { match:{ params: { currency } }, items } = this.props
+    let { match: { params: { currency } }, items } = this.props
     const itemCurrency = items.filter(item => item.currency.toLowerCase() === currency)[0]
 
     // actions.analytics.dataEvent(`balances-withdraw-${currency.toLowerCase()}`)
@@ -124,7 +128,8 @@ export default class Currency extends Component {
   render() {
     const { match: { params: { currency } }, items, intl: { locale, formatMessage } } = this.props
     const { isBalanceEmpty, balance } = this.state
-    const currencyFullName = items.find(item => item.currency === currency.toUpperCase()).fullName
+    const myCurrency = items.find(item => item.currency === currency.toUpperCase())
+    const currencyFullName = myCurrency ? myCurrency.fullName : 'Chosen currency'
 
     const SeoValues = {
       fullName: currencyFullName,
@@ -193,7 +198,7 @@ export default class Currency extends Component {
             <Row key={index} {...row} />
           )}
         />
-        <CloseIcon styleName="closeButton" onClick={() => this.props.history.push(localisedUrl(locale, '/'))} data-testid="CloseIcon" />
+        <CloseIcon styleName="closeButton" onClick={() => this.props.history.push(localisedUrl(locale, links.home))} data-testid="CloseIcon" />
       </section>
     )
   }

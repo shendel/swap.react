@@ -1,3 +1,17 @@
+.dark {
+  .checked {
+    .stepNumber {
+      background: #9066da;
+      color: #fff;
+      border: 1px solid #5100dc;
+      min-width: 35px;
+    }
+    .stepText {
+      color: #828f96;
+    }
+  }
+}
+
 .stepList,
 .stepItem,
 .stepNumber,
@@ -20,7 +34,7 @@
   position: relative;
   font-size: 17px;
   cursor: pointer;
-  color: #FD6B65;
+  color: #fd6b65;
   height: 40px;
   line-height: 40px;
   border-radius: 20px;
@@ -37,9 +51,9 @@
 }
 
 .stepList {
-  margin-left: 50px;
-  margin-top: 30px;
-  margin-bottom: 25px;
+  width: 37%;
+  height: 100%;
+  margin-top: 100px;
 }
 
 .stepItem {
@@ -84,7 +98,6 @@
   font-size: 20px;
   margin-left: 10px;
   position: relative;
-  z-index: 11111;
   a {
     font-size: 14px;
     margin-top: -12px;
@@ -106,23 +119,26 @@
   }
 }
 
+@media all and (max-width: 1000px) {
+  .stepList {
+    width: 100%;
+    margin-top: 30px;
+  }
+}
 
 @include media-tablet {
   .stepList {
     margin-left: 0;
     order: 4;
   }
-  .stepList.isMobile  {
+  .stepList.isMobile {
     margin-left: 0px;
     margin-bottom: 25px;
     align-items: baseline;
     margin-bottom: 5px;
-    margin-top: -20px;
-    display: flex;
     width: 100%;
     max-width: 600px;
     order: 1;
-    justify-content: space-between;
   }
 }
 
@@ -131,11 +147,14 @@
     margin-left: 0;
     order: 4;
   }
+
+  .transactionInStep {
+    a {
+      margin-top: 0;
+    }
+  }
+
   .stepList.isMobile {
-    padding-top: 20px;
-    margin: 0;
-    position: absolute;
-    top: -15px;
     width: 100%;
     order: 1;
     .cancelSwap {

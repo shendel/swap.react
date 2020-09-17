@@ -1,190 +1,406 @@
-import React, { Component } from 'react'
-import propTypes from 'prop-types'
+import React, { Component, Fragment } from 'react'
 
-import { isMobile } from 'react-device-detect'
 import { connect } from 'redaction'
-import { constants } from 'helpers'
-import { localisedUrl } from 'helpers/locale'
-import firestore from 'helpers/firebase/firestore'
 import actions from 'redux/actions'
-import { withRouter } from 'react-router'
-import { hasSignificantBalance, hasNonZeroBalance, notTestUnit } from 'helpers/user'
+
+import cssModules from 'react-css-modules'
+import styles from './Wallet.scss'
+import { isMobile } from 'react-device-detect'
 import moment from 'moment'
+import firestore from 'helpers/firebase/firestore'
 
-import CSSModules from 'react-css-modules'
-import stylesWallet from './Wallet.scss'
+import History from 'pages/History/History'
 
-import Row from './Row/Row'
-import Table from 'components/tables/Table/Table'
-import { WithdrawButton } from 'components/controls'
-import styles from 'components/tables/Table/Table.scss'
-import PageHeadline from 'components/PageHeadline/PageHeadline'
-import PageSeo from 'components/Seo/PageSeo'
-import SubTitle from 'components/PageHeadline/SubTitle/SubTitle'
-import KeyActionsPanel from 'components/KeyActionsPanel/KeyActionsPanel'
-import SaveKeysModal from 'components/modals/SaveKeysModal/SaveKeysModal'
-import { FormattedMessage, injectIntl, defineMessages } from 'react-intl'
-import Referral from 'components/Footer/Referral/Referral'
+import helpers, { links, constants } from 'helpers'
+import { localisedUrl } from 'helpers/locale'
+import { getActivatedCurrencies } from 'helpers/user'
 
-import config from 'app-config'
+import { injectIntl } from 'react-intl'
+
+import config from 'helpers/externalConfig'
+import { withRouter } from 'react-router'
+import CurrenciesList from './CurrenciesList'
+import InvoicesList from 'pages/Invoices/InvoicesList'
+
+import DashboardLayout from 'components/layout/DashboardLayout/DashboardLayout'
+import BalanceForm from 'components/BalanceForm/BalanceForm'
+
+import { BigNumber } from 'bignumber.js'
+
+import metamask from 'helpers/metamask'
+
 
 
 const isWidgetBuild = config && config.isWidget
+const isDark = localStorage.getItem(constants.localStorage.isDark)
 
 @connect(
   ({
     core: { hiddenCoinsList },
-    user: { ethData, btcData, tokensData, eosData, /* xlmData, */ telosData, nimData, usdtData, ltcData },
+    user,
+    user: {
+      activeFiat,
+      ethData,
+      btcData,
+      ghostData,
+      nextData,
+      btcMultisigSMSData,
+      btcMultisigUserData,
+      btcMultisigUserDataList,
+      tokensData,
+      isFetching,
+      isBalanceFetching,
+      multisigPendingCount,
+      activeCurrency
+    },
     currencies: { items: currencies },
-  }) => ({
-    tokens: ((config && config.isWidget) ?
-      [ config.erc20token.toUpperCase() ]
-      :
-      Object.keys(tokensData).map(k => (tokensData[k].currency))
-    ),
-    items: ((config && config.isWidget) ?
-      [btcData, ethData, usdtData ]
-      :
-      [btcData, ethData, eosData, telosData, /* xlmData, */ ltcData, usdtData /* nimData */ ]).map((data) => (
-      data.currency
-    )),
-    currencyBalance: [
-      btcData, ethData, eosData, /* xlmData, */ telosData, ltcData, usdtData, ...Object.keys(tokensData).map(k => (tokensData[k])), /* nimData */
-    ].map(({ balance, currency }) => ({
-      balance,
-      name: currency,
-    })),
-    currencies,
-    hiddenCoinsList : (config && config.isWidget) ? [] : hiddenCoinsList,
-    userEthAddress: ethData.address,
-    tokensData: { ethData, btcData, ltcData, eosData, telosData, usdtData },
-  })
+    createWallet: { currencies: assets },
+    modals,
+    ui: { dashboardModalsAllowed },
+  }) => {
+    let widgetMultiTokens = []
+    if (window.widgetERC20Tokens && Object.keys(window.widgetERC20Tokens).length) {
+      Object.keys(window.widgetERC20Tokens).forEach((key) => {
+        widgetMultiTokens.push(key.toUpperCase())
+      })
+    }
+    const tokens =
+      config && config.isWidget
+        ? window.widgetERC20Tokens && Object.keys(window.widgetERC20Tokens).length
+          ? widgetMultiTokens
+          : [config.erc20token.toUpperCase()]
+        : Object.keys(tokensData).map((k) => tokensData[k].currency)
+
+    const tokensItems = Object.keys(tokensData).map((k) => tokensData[k])
+
+    const allData = [
+      btcData,
+      btcMultisigSMSData,
+      btcMultisigUserData,
+      ethData,
+      ghostData,
+      nextData,
+      ...Object.keys(tokensData).map((k) => tokensData[k]),
+    ].map(({ account, keyPair, ...data }) => ({
+      ...data,
+    }))
+
+    const items = (config && config.isWidget
+      ? [btcData, ethData, ghostData, nextData]
+      : [btcData, btcMultisigSMSData, btcMultisigUserData, ethData, ghostData, nextData]
+    ).map((data) => data.currency)
+
+    return {
+      tokens,
+      items,
+      allData,
+      tokensItems,
+      currencies,
+      assets,
+      isFetching,
+      isBalanceFetching,
+      multisigPendingCount,
+      hiddenCoinsList: hiddenCoinsList,
+      userEthAddress: ethData.address,
+      user,
+      activeCurrency,
+      activeFiat,
+      tokensData: {
+        ethData,
+        btcData,
+        ghostData,
+        nextData,
+        btcMultisigSMSData,
+        btcMultisigUserData,
+        btcMultisigUserDataList,
+      },
+      dashboardView: dashboardModalsAllowed,
+      modals,
+    }
+  }
 )
 @injectIntl
 @withRouter
-@CSSModules(stylesWallet, { allowMultiple: true })
+@connect(({ signUp: { isSigned } }) => ({
+  isSigned,
+}))
+@cssModules(styles, { allowMultiple: true })
 export default class Wallet extends Component {
+  constructor(props) {
+    super(props)
 
-  static propTypes = {
-    core: propTypes.object,
-    user: propTypes.object,
-    currencies: propTypes.array,
-    hiddenCoinsList: propTypes.array,
-    history: propTypes.object,
-    items: propTypes.arrayOf(propTypes.string),
-    tokens: propTypes.arrayOf(propTypes.string),
-    location: propTypes.object,
-    intl: propTypes.object.isRequired,
-    match: propTypes.object,
-  }
-
-  state = {
-    saveKeys: false,
-    openModal: false,
-    isShowingPromoText: false,
-  }
-
-  componentWillMount() {
-    actions.user.getBalances()
-    // actions.analytics.dataEvent('open-page-balances')
-
-    this.checkImportKeyHash()
-
-    if (process.env.MAINNET) {
-      localStorage.setItem(constants.localStorage.testnetSkip, false)
-    } else {
-      localStorage.setItem(constants.localStorage.testnetSkip, true)
-    }
-
-    const testSkip = JSON.parse(localStorage.getItem(constants.localStorage.testnetSkip))
-    const saveKeys = JSON.parse(localStorage.getItem(constants.localStorage.privateKeysSaved))
-
-    this.setState(() => ({
-      testSkip,
-      saveKeys,
-    }))
-  }
-
-  componentWillReceiveProps() {
-    const { currencyBalance } = this.props
-
-    const hasAtLeastTenDollarBalance = hasSignificantBalance(currencyBalance)
-
-    if (process.env.MAINNET && hasAtLeastTenDollarBalance) {
-      this.setState({ isShowingPromoText: true })
-    }
-  }
-
-  shouldComponentUpdate(nextProps, nextState) {
-    const getComparableProps = (props) => ({
-      items: props.items,
-      currencyBalance: props.currencyBalance,
-      tokens: props.tokens,
-      currencies: props.currencies,
-      hiddenCoinsList: props.hiddenCoinsList,
-    })
-    return JSON.stringify({
-      ...getComparableProps(this.props),
-      ...this.state,
-    }) !== JSON.stringify({
-      ...getComparableProps(nextProps),
-      ...nextState,
-    })
-  }
-
-  forceCautionUserSaveMoney = () => {
-    const { currencyBalance } = this.props
-
-    const hasNonZeroCurrencyBalance = hasNonZeroBalance(currencyBalance)
-    const isNotTestUser = notTestUnit(currencyBalance)
-    const doesCautionPassed = localStorage.getItem(constants.localStorage.wasCautionPassed)
-
-    if (!doesCautionPassed && (hasNonZeroCurrencyBalance || isNotTestUser) && process.env.MAINNET) {
-      actions.modals.open(constants.modals.PrivateKeys, {})
-    }
-  }
-
-  checkImportKeyHash = () => {
-    const { history, intl: { locale } } = this.props
-
-    const urlHash = history.location.hash
-    const importKeysHash = '#importKeys'
-
-    if (!urlHash) {
-      return
-    }
-
-    if (urlHash !== importKeysHash) {
-      return
-    }
-
-    localStorage.setItem(constants.localStorage.privateKeysSaved, true)
-    localStorage.setItem(constants.localStorage.firstStart, true)
-
-    actions.modals.open(constants.modals.ImportKeys, {
-      onClose: () => {
-        history.replace((localisedUrl(locale, '/')))
+    const {
+      match: {
+        params: { page = null },
       },
+      multisigPendingCount,
+    } = props
+
+    let activeView = 0
+
+    if (page === 'history' && !isMobile) {
+      activeView = 1
+    }
+    if (page === 'invoices') activeView = 2
+
+    this.state = {
+      activeView,
+      btcBalance: 0,
+      enabledCurrencies: getActivatedCurrencies(),
+      multisigPendingCount,
+    }
+  }
+
+  handleConnectWallet() {
+    const {
+      history,
+      intl: {
+        locale,
+      },
+    } = this.props
+
+    if (metamask.isEnabled()) {
+      setTimeout(() => {
+        metamask.connect().then((isConnected) => {
+          if (isConnected) {
+            localStorage.setItem(constants.localStorage.isWalletCreate, true)
+            setTimeout(async () => {
+              history.push(localisedUrl(locale, links.home))
+              await actions.user.sign()
+              await actions.user.getBalances()
+            })
+          } else {
+            history.push(localisedUrl(locale, links.createWallet))
+          }
+        })
+      }, 100)
+    } else {
+      history.push(localisedUrl(locale, links.home))
+    }
+  }
+
+  componentDidUpdate(prevProps) {
+    const {
+      match: {
+        params: { page = null },
+      },
+      multisigPendingCount,
+      location: { pathname },
+    } = this.props
+
+
+    const {
+      location: {
+        pathname: prevPathname,
+      },
+    } = prevProps
+
+    if (pathname.toLowerCase() != prevPathname.toLowerCase()
+      && pathname.toLowerCase() == links.connectWallet.toLowerCase()
+    ) {
+      this.handleConnectWallet()
+    }
+
+    const {
+      match: {
+        params: { page: prevPage = null },
+      },
+      multisigPendingCount: prevMultisigPendingCount,
+    } = prevProps
+
+    if (page !== prevPage || multisigPendingCount !== prevMultisigPendingCount) {
+      let activeView = 0
+
+      if (page === 'history' && !isMobile) activeView = 1
+      if (page === 'invoices') activeView = 2
+
+      this.setState({
+        activeView,
+        multisigPendingCount,
+      })
+    }
+  }
+
+  componentDidMount() {
+    console.log('Wallet mounted')
+    const { params, url } = this.props.match
+    const {
+      multisigPendingCount,
+      location: { pathname },
+    } = this.props
+
+    if (pathname.toLowerCase() == links.connectWallet.toLowerCase()) {
+      this.handleConnectWallet()
+    }
+    console.log('wallet did mount', pathname)
+    actions.user.getBalances()
+
+    actions.user.fetchMultisigStatus()
+
+    if (url.includes('send')) {
+      this.handleWithdraw(params)
+    }
+    this.getInfoAboutCurrency()
+    this.setState({
+      multisigPendingCount,
     })
+  }
+
+  componentWillUnmount() {
+    console.log('Wallet unmounted')
+  }
+
+  getInfoAboutCurrency = async () => {
+    const { currencies } = this.props
+    const currencyNames = currencies.map(({ name }) => name)
+
+    await actions.user.getInfoAboutCurrency(currencyNames)
+  }
+
+  handleWithdraw = params => {
+    const { allData } = this.props
+    const { address, amount } = params
+    const item = allData.find(({ currency }) => currency.toLowerCase() === params.currency.toLowerCase())
+
+    actions.modals.open(constants.modals.Withdraw, {
+      ...item,
+      toAddress: address,
+      amount,
+    })
+  }
+
+  goToСreateWallet = () => {
+    const {
+      history,
+      intl: { locale },
+    } = this.props
+
+    history.push(localisedUrl(locale, links.createWallet))
+  }
+
+  handleGoExchange = () => {
+    const {
+      history,
+      intl: { locale },
+    } = this.props
+    if (isWidgetBuild && !config.isFullBuild) {
+      // was pointOfSell
+      history.push(localisedUrl(locale, links.exchange))
+    } else {
+      history.push(localisedUrl(locale, links.exchange))
+    }
+  }
+
+  handleModalOpen = context => {
+    const { enabledCurrencies } = this.state
+    const { hiddenCoinsList } = this.props
+
+    /* @ToDo Вынести отдельно */
+    // Набор валют для виджета
+    const widgetCurrencies = ['BTC']
+    if (!hiddenCoinsList.includes('BTC (SMS-Protected)')) widgetCurrencies.push('BTC (SMS-Protected)')
+    if (!hiddenCoinsList.includes('BTC (PIN-Protected)')) widgetCurrencies.push('BTC (PIN-Protected)')
+    if (!hiddenCoinsList.includes('BTC (Multisig)')) widgetCurrencies.push('BTC (Multisig)')
+    widgetCurrencies.push('ETH')
+    widgetCurrencies.push('GHOST')
+    widgetCurrencies.push('NEXT')
+    if (isWidgetBuild) {
+      if (window.widgetERC20Tokens && Object.keys(window.widgetERC20Tokens).length) {
+        // Multi token widget build
+        Object.keys(window.widgetERC20Tokens).forEach(key => {
+          widgetCurrencies.push(key.toUpperCase())
+        })
+      } else {
+        widgetCurrencies.push(config.erc20token.toUpperCase())
+      }
+    }
+
+    const currencies = actions.core.getWallets()
+      .filter(({ currency, balance }) => {
+        return (
+          ((context === 'Send') ? balance : true)
+          && !hiddenCoinsList.includes(currency)
+          && enabledCurrencies.includes(currency)
+          && ((isWidgetBuild) ?
+            widgetCurrencies.includes(currency)
+            : true)
+        )
+      })
+
+    actions.modals.open(constants.modals.CurrencyAction, {
+      currencies,
+      context
+    })
+  }
+
+  handleWithdrawFirstAsset = () => {
+    const { hiddenCoinsList } = this.props
+    const {
+      history,
+      intl: { locale },
+    } = this.props
+
+    const {
+      Withdraw,
+      WithdrawMultisigSMS,
+      WithdrawMultisigUser,
+    } = constants.modals
+
+    const allData = actions.core.getWallets()
+
+    let tableRows = allData.filter(({ currency, address, balance }) => {
+      // @ToDo - В будущем нужно убрать проверку только по типу монеты.
+      // Старую проверку оставил, чтобы у старых пользователей не вывалились скрытые кошельки
+
+      return (!hiddenCoinsList.includes(currency) && !hiddenCoinsList.includes(`${currency}:${address}`)) || balance > 0
+    })
+
+    const { currency, address } = tableRows[0];
+
+    let withdrawModalType = Withdraw
+    if (currency === 'BTC (SMS-Protected)')
+      withdrawModalType = WithdrawMultisigSMS
+    if (currency === 'BTC (Multisig)') withdrawModalType = WithdrawMultisigUser
+
+    let targetCurrency = currency
+    switch (currency.toLowerCase()) {
+      case 'btc (multisig)':
+      case 'btc (sms-protected)':
+      case 'btc (pin-protected)':
+        targetCurrency = 'btc'
+        break
+    }
+
+    const isToken = helpers.ethToken.isEthToken({ name: currency })
+
+    history.push(
+      localisedUrl(
+        locale,
+        (isToken ? '/token' : '') + `/${targetCurrency}/${address}/send`
+      )
+    )
   }
 
   checkBalance = () => {
-    const now = moment().format('HH:mm:ss DD/MM/YYYY ZZ')
+    // that is for noxon, dont delete it :)
+    const now = moment().format('HH:mm:ss DD/MM/YYYY')
     const lastCheck = localStorage.getItem(constants.localStorage.lastCheckBalance) || now
-    const lastCheckMoment = moment(lastCheck, 'HH:mm:ss DD/MM/YYYY ZZ')
+    const lastCheckMoment = moment(lastCheck, 'HH:mm:ss DD/MM/YYYY')
 
-    const isFirstCheck = moment(now, 'HH:mm:ss DD/MM/YYYY ZZ').isSame(lastCheckMoment)
-    const isOneHourAfter = moment(now, 'HH:mm:ss DD/MM/YYYY ZZ').isAfter(lastCheckMoment.add(1, 'hours'))
+    const isFirstCheck = moment(now, 'HH:mm:ss DD/MM/YYYY').isSame(lastCheckMoment)
+    const isOneHourAfter = moment(now, 'HH:mm:ss DD/MM/YYYY').isAfter(lastCheckMoment.add(1, 'hours'))
 
-    const { ethData, btcData, ltcData } = this.props.tokensData
+    const { ethData, btcData, ghostData, nextData } = this.props.tokensData
 
     const balancesData = {
       ethBalance: ethData.balance,
       btcBalance: btcData.balance,
-      ltcBalance: ltcData.balance,
+      ghostBalance: ghostData.balance,
+      nextBalance: nextData.balance,
       ethAddress: ethData.address,
       btcAddress: btcData.address,
-      ltcAddress: ltcData.address,
+      ghostAddress: ghostData.address,
+      nextAddress: nextData.address,
     }
 
     if (isOneHourAfter || isFirstCheck) {
@@ -193,130 +409,174 @@ export default class Wallet extends Component {
     }
   }
 
+
+  handleModalOpen = context => {
+    const { enabledCurrencies } = this.state
+    const { hiddenCoinsList } = this.props
+
+    /* @ToDo Вынести в экшены и убрать все дубляжи из всех компонентов */
+    // Набор валют для виджета
+    const widgetCurrencies = ['BTC']
+    if (!hiddenCoinsList.includes('BTC (SMS-Protected)')) widgetCurrencies.push('BTC (SMS-Protected)')
+    if (!hiddenCoinsList.includes('BTC (PIN-Protected)')) widgetCurrencies.push('BTC (PIN-Protected)')
+    if (!hiddenCoinsList.includes('BTC (Multisig)')) widgetCurrencies.push('BTC (Multisig)')
+    widgetCurrencies.push('ETH')
+    if (isWidgetBuild) {
+      if (window.widgetERC20Tokens && Object.keys(window.widgetERC20Tokens).length) {
+        // Multi token widget build
+        Object.keys(window.widgetERC20Tokens).forEach(key => {
+          widgetCurrencies.push(key.toUpperCase())
+        })
+      } else {
+        widgetCurrencies.push(config.erc20token.toUpperCase())
+      }
+    }
+
+    const currencies = actions.core.getWallets()
+      .filter(({ currency, balance }) => {
+        return (
+          ((context === 'Send') ? balance : true)
+          && !hiddenCoinsList.includes(currency)
+          && enabledCurrencies.includes(currency)
+          && ((isWidgetBuild) ?
+            widgetCurrencies.includes(currency)
+            : true)
+        )
+      })
+
+    actions.modals.open(constants.modals.CurrencyAction, {
+      currencies,
+      context
+    })
+  }
+
   render() {
-    const { items, tokens, currencies, hiddenCoinsList, intl, location } = this.props
-    const { isShowingPromoText } = this.state
+    const {
+      activeView,
+      infoAboutCurrency,
+      enabledCurrencies,
+      multisigPendingCount,
+    } = this.state
+
+    const {
+      hiddenCoinsList,
+      isBalanceFetching,
+      activeFiat,
+      activeCurrency,
+      match: {
+        params: {
+          page = null,
+        },
+      },
+    } = this.props
+
+    const allData = actions.core.getWallets()
 
     this.checkBalance()
-    const titles = [
-      <FormattedMessage id="Wallet114" defaultMessage="Coin" />,
-      <FormattedMessage id="Wallet115" defaultMessage="Name" />,
-      <FormattedMessage id="Wallet116" defaultMessage="Balance" />,
-      <FormattedMessage id="Wallet117" defaultMessage="Your Address" />,
-      isMobile ?
-        <FormattedMessage id="Wallet118" defaultMessage="Send, receive, swap" />
-        :
-        <FormattedMessage id="Wallet119" defaultMessage="Actions" />,
-    ]
 
-    const titleSwapOnline = defineMessages({
-      metaTitle: {
-        id: 'Wallet140',
-        defaultMessage: 'Swap.Online - Cryptocurrency Wallet with Atomic Swap Exchange',
-      },
-    })
-    const titleWidgetBuild = defineMessages({
-      metaTitle: {
-        id: 'WalletWidgetBuildTitle',
-        defaultMessage: 'Cryptocurrency Wallet with Atomic Swap Exchange',
-      },
-    })
-    const title = (isWidgetBuild) ? titleWidgetBuild : titleSwapOnline
+    let btcBalance = 0
+    let changePercent = 0
 
-    const description = defineMessages({
-      metaDescription: {
-        id: 'Wallet146',
-        defaultMessage: `Our online wallet with Atomic swap algorithms will help you store and exchange cryptocurrency instantly
-        and more secure without third-parties. Decentralized exchange.`,
-      },
+    // Набор валют для виджета
+    const widgetCurrencies = ['BTC']
+    if (!hiddenCoinsList.includes('BTC (SMS-Protected)')) widgetCurrencies.push('BTC (SMS-Protected)')
+    if (!hiddenCoinsList.includes('BTC (PIN-Protected)')) widgetCurrencies.push('BTC (PIN-Protected)')
+    if (!hiddenCoinsList.includes('BTC (Multisig)')) widgetCurrencies.push('BTC (Multisig)')
+    widgetCurrencies.push('ETH')
+    widgetCurrencies.push('GHOST')
+    widgetCurrencies.push('NEXT')
+    if (isWidgetBuild) {
+      if (window.widgetERC20Tokens && Object.keys(window.widgetERC20Tokens).length) {
+        // Multi token widget build
+        Object.keys(window.widgetERC20Tokens).forEach((key) => {
+          widgetCurrencies.push(key.toUpperCase())
+        })
+      } else {
+        widgetCurrencies.push(config.erc20token.toUpperCase())
+      }
+    }
+
+    let tableRows = allData.filter(({ currency, address, balance }) => {
+      // @ToDo - В будущем нужно убрать проверку только по типу монеты.
+      // Старую проверку оставил, чтобы у старых пользователей не вывалились скрытые кошельки
+
+      return (!hiddenCoinsList.includes(currency) && !hiddenCoinsList.includes(`${currency}:${address}`)) || balance > 0
     })
 
-    const sectionWalletStyleName = isMobile ? 'sectionWalletMobile' : 'sectionWallet'
 
-    this.forceCautionUserSaveMoney()
+    if (isWidgetBuild) {
+      //tableRows = allData.filter(({ currency }) => widgetCurrencies.includes(currency))
+      tableRows = allData.filter(
+        ({ currency, address,  balance }) =>
+          !hiddenCoinsList.includes(currency) && !hiddenCoinsList.includes(`${currency}:${address}`) || balance > 0
+      )
+      // Отфильтруем валюты, исключив те, которые не используются в этом билде
+      tableRows = tableRows.filter(({ currency }) => widgetCurrencies.includes(currency))
+    }
+
+    tableRows = tableRows.filter(({ currency }) => enabledCurrencies.includes(currency))
+
+    tableRows = tableRows.map(el => {
+      return ({
+        ...el,
+        balance: el.balance,
+        fiatBalance: (el.balance > 0 && el.infoAboutCurrency && el.infoAboutCurrency.price_fiat) ? BigNumber(el.balance)
+          .multipliedBy(el.infoAboutCurrency.price_fiat)
+          .dp(2, BigNumber.ROUND_FLOOR) : 0
+      })
+    })
+
+    tableRows.forEach(({ name, infoAboutCurrency, balance, currency }) => {
+      const currName = currency || name
+
+      if ((!isWidgetBuild || widgetCurrencies.includes(currName)) && infoAboutCurrency && balance !== 0) {
+        if (currName === 'BTC') {
+          changePercent = infoAboutCurrency.percent_change_1h
+        }
+        btcBalance += balance * infoAboutCurrency.price_btc
+      }
+    })
+
+    const allFiatBalance = tableRows.reduce((acc, cur) => BigNumber(cur.fiatBalance).plus(acc), 0)
 
     return (
-      <section styleName={isWidgetBuild ? `${sectionWalletStyleName} ${sectionWalletStyleName}_widget` : sectionWalletStyleName}>
-        <PageSeo
-          location={location}
-          defaultTitle={intl.formatMessage(title.metaTitle)}
-          defaultDescription={intl.formatMessage(description.metaDescription)} />
-        <PageHeadline styleName={isWidgetBuild ? 'pageLine pageLine_widget' : 'pageLine'}>
-          <SubTitle>
-            <FormattedMessage id="Wallet104" defaultMessage="Your online cryptocurrency wallet" />
-          </SubTitle>
-        </PageHeadline>
-        <KeyActionsPanel />
-
-        {!isShowingPromoText && (
-          <div styleName="depositText">
-            <FormattedMessage id="Wallet137" defaultMessage="Deposit funds to addresses below" />
-          </div>
+      <DashboardLayout
+        page={page}
+        isDark={isDark}
+        BalanceForm={(
+          <BalanceForm
+            isDark={isDark}
+            activeFiat={activeFiat}
+            fiatBalance={allFiatBalance}
+            currencyBalance={btcBalance}
+            changePercent={changePercent}
+            activeCurrency={activeCurrency}
+            handleReceive={this.handleModalOpen}
+            handleWithdraw={this.handleWithdrawFirstAsset}
+            handleExchange={this.handleGoExchange}
+            isFetching={isBalanceFetching}
+            type="wallet"
+            currency="btc"
+            infoAboutCurrency={infoAboutCurrency}
+            multisigPendingCount={multisigPendingCount}
+          />
         )}
-        {isShowingPromoText && (
-          <div>
-            <FormattedMessage
-              id="WalletPromoText"
-              defaultMessage="
-                🎁 🎁 🎁 Thank you for using Swap.Online!
-                Tell us about your experience with our service
-                and we will gift you $10 in BTC 🎁 🎁 🎁"
-            />
-            <a href="https://docs.google.com/forms/d/e/1FAIpQLSfSxJaIKbyfqf-kn7eRt-0jDPp0Wd2wgovrzRKQibCF6gY9bQ/viewform?usp=sf_link">
-              <FormattedMessage id="WalletPromoLinkText" defaultMessage="Open poll" />
-            </a>
-          </div>
-        )}
-
-
-        <Table
-          id="table-wallet"
-          className={styles.wallet}
-          titles={titles}
-          rows={[...items, ...tokens].filter(currency => !hiddenCoinsList.includes(currency))}
-          rowRender={(row, index, selectId, handleSelectId) => (
-            <Row key={row} currency={row} currencies={currencies} hiddenCoinsList={hiddenCoinsList} selectId={selectId} index={index} handleSelectId={handleSelectId} />
-          )}
-        />
+      >
         {
-          (config && !config.isWidget) && (
-            <div styleName="inform">
-              <Referral address={this.props.userEthAddress} />
-
-              <h2 styleName="informHeading">Wallet based on the Atomic Swap technology</h2>
-              <FormattedMessage
-                id="Wallet156"
-                defaultMessage="Welcome to Swap.Online, a decentralized cross-chain wallet based on the Atomic Swap technology.
-
-                Here you can safely store and promptly exchange Bitcoin, Ethereum, EOS, USD, Tether, BCH, and numerous ERC-20 tokens.
-
-
-                Swap.Online doesn’t store your keys or tokens. Our wallet operates directly in at browser, so no additional installations or downloads are required.
-
-                The Swap.Online service is fully decentralized as (because)all the operations with tokens are executed via the IPFS network.
-
-
-                Our team was the first who finalized Atomic Swaps with USDT and EOS in September 2018 and Litecoin blockchain was added in October 2018.
-
-                Our wallet addresses a real multi-chain integration with a decentralized order book, no third party involved in the exchange, no proxy-token and no token wrapping.
-
-                We can integrate any ERC-20 token of a project for free just in case of mutual PR-announcement.
-
-
-                In addition, we developed Swap.Button, a b2b-solution to exchange all kinds of tokens for Bitcoin and Ethereum.
-
-                Install Swap.Button html widget on your site and collect crypto investments for your project.
-
-
-                Start using https://swap.online/ today and enjoy the power of true decentralization."
-                values={{
-                  br: <br />,
-                }}
-              />
-            </div>
-          )
+          activeView === 0 &&
+          <CurrenciesList
+            isDark={isDark}
+            tableRows={tableRows}
+            {...this.state}
+            {...this.props}
+            goToСreateWallet={this.goToСreateWallet}
+            multisigPendingCount={multisigPendingCount}
+            getExCurrencyRate={(currencySymbol, rate) => this.getExCurrencyRate(currencySymbol, rate)}
+          />
         }
-      </section>
+        {activeView === 1 && (<History {...this.props} isDark={isDark} />)}
+        {activeView === 2 && (<InvoicesList {...this.props} onlyTable={true} isDark={isDark} />)}
+      </DashboardLayout>
     )
   }
 }

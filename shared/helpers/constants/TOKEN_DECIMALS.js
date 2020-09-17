@@ -1,11 +1,11 @@
-import config from 'app-config'
+import config from 'helpers/externalConfig'
 
 
 const decimals = {
   btc: 8,
   eth: 18,
-  ltc: 8,
-
+  ghost: 8,
+  next: 8,
 }
 
 Object.keys(config.erc20)

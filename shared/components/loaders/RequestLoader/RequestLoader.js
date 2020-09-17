@@ -10,9 +10,7 @@ const RequestLoader = ({ isVisible, data }) => {
     return null
   }
 
-  return (
-    <Loader data={data} />
-  )
+  return <Loader data={data} />
 }
 
 RequestLoader.propTypes = {
@@ -22,7 +20,6 @@ RequestLoader.propTypes = {
 RequestLoader.defaultProps = {
   isVisible: false,
 }
-
 
 export default connect({
   isVisible: 'loader.isVisible',

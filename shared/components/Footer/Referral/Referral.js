@@ -6,10 +6,10 @@ import CopyToClipboard from 'react-copy-to-clipboard'
 
 
 const Referral = (props) => {
-  const myRefLink = `https://swap.online/?promo=${props.address}`
+  const myRefLink = `https://swaponline.io/?promo=${props.address}`
 
   return (
-    <div styleName="Referral">
+    <div>
       <span styleName="myLink">{`${myRefLink}`}</span>
       &nbsp;&nbsp;
       <CopyToClipboard text={myRefLink} data-tut="reactour__eth_promo_address">
@@ -19,8 +19,18 @@ const Referral = (props) => {
       <br />
       <FormattedMessage
         id="ReferralLinks1" // eslint-disable-next-line
-        defaultMessage="Share or send link on this page: every user who comes via your referral link gets up to 10 SWAP tokens. Moreover, you will earn SWAP tokens for every his ir her succesful swap (including operations with bonus tokens!)"
-      />
+        defaultMessage="Share the link above!  Each user who visits swap through the above referral link will get up to 10 SWAP tokens.  What’s in it for you?  Each time one of those users makes a successful swap (including operations with bonus tokens), you’ll earn SWAP tokens too!"
+      />{` `}
+      <a
+        href="https://wiki.swaponline.io/affiliate-limits/"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        <FormattedMessage
+          id="ReferralLinks2" // eslint-disable-next-line
+          defaultMessage="Limits and conditions"
+        />
+      </a>
     </div>
   )
 }

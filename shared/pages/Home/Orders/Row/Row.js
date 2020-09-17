@@ -4,18 +4,16 @@ import PropTypes from 'prop-types'
 import { connect } from 'redaction'
 import actions from 'redux/actions'
 
-import { isMobile } from 'react-device-detect'
-
 import cssModules from 'react-css-modules'
 import styles from './Row.scss'
 
 import helpers, { links, constants } from 'helpers'
-import { Link, Redirect } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import SwapApp from 'swap.app'
 
 import Avatar from 'components/Avatar/Avatar'
 import InlineLoader from 'components/loaders/InlineLoader/InlineLoader'
-import { Button, RemoveButton } from 'components/controls'
+import { RemoveButton } from 'components/controls'
 
 import Pair from '../Pair'
 import PAIR_TYPES from 'helpers/constants/PAIR_TYPES'
@@ -26,9 +24,14 @@ import { BigNumber } from 'bignumber.js'
 
 
 @injectIntl
-@connect({
-  peer: 'ipfs.peer',
-})
+@connect(({
+  ipfs: { peer },
+  user,
+}) => ({
+  currenciesData: user,
+  peer,
+}))
+
 @cssModules(styles)
 export default class Row extends Component {
 
@@ -36,17 +39,26 @@ export default class Row extends Component {
     row: PropTypes.object,
   }
 
-  state = {
-    balance: 0,
-    windowWidth: 0,
-    isFetching: false,
-    enterButton: false,
+  constructor(props) {
+    super(props)
 
+    this.state = {
+      balance: 0,
+      windowWidth: 0,
+      isFetching: false,
+      enterButton: false,
+      estimatedFeeValues: {},
+    }
+
+    constants.coinsWithDynamicFee
+      .forEach(item => this.state.estimatedFeeValues[item] = constants.minAmountOffer[item])
   }
 
   componentDidMount() {
+    const { estimatedFeeValues } = this.state
     window.addEventListener('resize', this.renderContent)
     this.renderContent()
+    this.getEstimateFee(estimatedFeeValues)
   }
 
   componentWillUnmount() {
@@ -55,7 +67,7 @@ export default class Row extends Component {
   }
 
   componentWillMount() {
-    const { row: {  sellCurrency, isMy, buyCurrency } } = this.props
+    const { row: { sellCurrency, isMy, buyCurrency } } = this.props
     if (isMy) {
       this.checkBalance(sellCurrency)
     } else {
@@ -63,16 +75,40 @@ export default class Row extends Component {
     }
   }
 
+  getEstimateFee = async (estimatedFeeValues) => {
+    const fee = await helpers.estimateFeeValue.setEstimatedFeeValues({ estimatedFeeValues })
+    this.setState(() => ({ estimatedFeeValues: fee }))
+  }
+
   checkBalance = async (currency) => {
-    const balance = await actions[currency.toLowerCase()].getBalance(currency)
+    currency = currency.toLowerCase()
+
+    let balance
+
+    const isCurrencyEthOrEthToken = helpers.ethToken.isEthOrEthToken({ name: currency })
+    const isCurrencyEthToken = helpers.ethToken.isEthToken({ name: currency })
+
+    if (isCurrencyEthOrEthToken) {
+      if (isCurrencyEthToken) {
+        balance = await actions.token.getBalance(currency)
+      } else {
+        balance = await actions.eth.getBalance(currency)
+      }
+    } else {
+      const { currenciesData } = this.props
+
+      const unspents = await actions[currency].fetchUnspents(currenciesData[`${currency}Data`].address)
+      const totalUnspent = unspents.reduce((summ, { satoshis }) => summ + satoshis, 0)
+      balance = BigNumber(totalUnspent).dividedBy(1e8)
+    }
 
     this.setState({
       balance,
     })
   }
 
-  сheckDeclineOrders = (orderId, currency, checkCurrency) => {
-    const { intl: { locale }, decline } = this.props
+  checkDeclineOrders = (orderId, currency) => {
+    const { decline } = this.props
 
     if (decline.length === 0) {
       this.sendRequest(orderId, currency)
@@ -85,6 +121,8 @@ export default class Row extends Component {
       }
     }
   }
+
+  getDecimals = (amount, currency) => String(new BigNumber(amount).dp(constants.tokenDecimals[currency.toLowerCase()], BigNumber.ROUND_CEIL))
 
   handleDeclineOrdersModalOpen = (indexOfDecline) => {
     const orders = SwapApp.shared().services.orders.items
@@ -99,17 +137,108 @@ export default class Row extends Component {
 
   handleGoTrade = async (currency) => {
     const balance = await actions.eth.getBalance()
-    return (balance >= 0.005 || currency.toLowerCase() === 'eos')
+    return (balance >= 0.005)
   }
 
-  sendRequest = (orderId, currency) => {
-    const { row: { buyAmount, sellAmount, buyCurrency, sellCurrency }, intl } = this.props
+  sendRequest = async (orderId, currency) => {
+    const {
+      row: {
+        id,
+        buyAmount,
+        buyCurrency,
+        sellCurrency,
+      },
+      row,
+      intl,
+      history,
+    } = this.props
 
-    const pair = Pair.fromOrder(this.props.row)
+    const pair = Pair.fromOrder(row)
     const { price, amount, total, main, base, type } = pair
 
-    const sell = new BigNumber(sellAmount).dp(6, BigNumber.ROUND_CEIL)
-    const buy = new BigNumber(buyAmount).dp(6, BigNumber.ROUND_CEIL)
+    const { address, balance } = actions.core.getWallet({ currency: buyCurrency })
+
+    let checkAmount = buyAmount
+
+    const ethFee = BigNumber(
+      await helpers.eth.estimateFeeValue({ method: 'swap' })
+    ).multipliedBy(1.5).toNumber()
+
+    const btcFee = BigNumber(
+      await helpers.btc.estimateFeeValue({ method: 'swap' })
+    ).multipliedBy(1).toNumber()
+
+    if (buyCurrency === 'ETH') {
+      checkAmount = BigNumber(checkAmount).plus(ethFee).toNumber()
+    }
+
+    let ethBalanceOk = true
+
+    const isSellToken = helpers.ethToken.isEthToken( { name: sellCurrency } )
+    const { balance: ethBalance }  = actions.core.getWallet({ currency: 'ETH' })
+
+    let balanceIsOk = true
+    if (
+      isSellToken
+      && (
+        balance < checkAmount
+        || ethBalance < ethFee
+      )
+    ) balanceIsOk = false
+
+
+    if (sellCurrency === 'BTC'
+      && !isSellToken
+      && balance < checkAmount
+    ) balanceIsOk = false
+
+    if (!balanceIsOk) {
+      const alertMessage = (
+        <Fragment>
+          <FormattedMessage
+            id="AlertOrderNonEnoughtBalance"
+            defaultMessage="Please top up your balance before you start the swap."
+          />
+          <br />
+          {isSellToken && (
+            <FormattedMessage
+              id="Swap_NeedEthFee"
+              defaultMessage="На вашем балансе должно быть не менее {ethFee} ETH и {btcFee} BTC для оплаты коммисии майнера"
+              values={{
+                ethFee,
+                btcFee,
+              }}
+            />
+          )}
+          {!isSellToken && (
+            <FormattedMessage
+              id="Swap_NeedMoreAmount"
+              defaultMessage="На вашем балансе должно быть не менее {amount} {currency}. {br}Коммисия майнера {ethFee} ETH и {btcFee} BTC"
+              values={{
+                amount: checkAmount,
+                currency: buyCurrency,
+                ethFee,
+                btcFee,
+                br: <br />,
+              }}
+            />
+          )}
+        </Fragment>
+      )
+      actions.modals.open(constants.modals.AlertWindow, {
+        title: <FormattedMessage
+          id="AlertOrderNonEnoughtBalanceTitle"
+          defaultMessage="Not enough balance."
+        />,
+        message: alertMessage,
+        canClose: true,
+        currency: buyCurrency,
+        address,
+        actionType: 'deposit',
+      })
+      return
+    }
+
     const exchangeRates = new BigNumber(price).dp(6, BigNumber.ROUND_CEIL)
 
     const messages = defineMessages({
@@ -123,8 +252,9 @@ export default class Row extends Component {
       },
     })
 
-    actions.modals.open(constants.modals.Confirm, {
-      onAccept: async () => {
+    actions.modals.open(constants.modals.ConfirmBeginSwap, {
+      order: this.props.row,
+      onAccept: async (customWallet) => {
         const check = await this.handleGoTrade(currency)
 
         this.setState({ isFetching: true })
@@ -133,11 +263,18 @@ export default class Row extends Component {
           this.setState(() => ({ isFetching: false }))
         }, 15 * 1000)
 
-        actions.core.sendRequest(orderId, {}, (isAccepted) => {
+        const destination = {}
+        if (customWallet !== null) {
+          destination.address = customWallet
+        }
+
+        actions.core.sendRequest(orderId, destination, (isAccepted) => {
           console.log(`user has ${isAccepted ? 'accepted' : 'declined'} your request`)
 
           if (isAccepted) {
-            this.setState({ redirect: true, isFetching: false })
+            this.setState({ isFetching: false }, () => {
+              history.push(localisedUrl(intl.locale, `${links.swap}/${buyCurrency}-${sellCurrency}/${id}`))
+            })
           }
           else {
             this.setState({ isFetching: false })
@@ -153,10 +290,10 @@ export default class Row extends Component {
             action: `${type === PAIR_TYPES.BID
               ? intl.formatMessage(messages.sell)
               : intl.formatMessage(messages.buy)
-            }`,
-            amount: `${amount.toFixed(5)}`,
+              }`,
+            amount: `${this.getDecimals(amount, main)}`,
             main: `${main}`,
-            total: `${total.toFixed(5)}`,
+            total: `${this.getDecimals(total, base)}`,
             base: `${base}`,
             price: `${exchangeRates}`,
           }}
@@ -166,7 +303,7 @@ export default class Row extends Component {
   }
 
   renderWebContent() {
-    const { balance, isFetching } = this.state
+    const { balance, isFetching, estimatedFeeValues } = this.state
     const {
       peer,
       orderId,
@@ -174,12 +311,11 @@ export default class Row extends Component {
         id,
         isMy,
         buyAmount,
-        sellAmount,
         buyCurrency,
         isRequested,
         isProcessing,
         sellCurrency,
-        owner: {  peer: ownerPeer },
+        owner: { peer: ownerPeer },
       },
       removeOrder,
       intl: { locale },
@@ -188,12 +324,16 @@ export default class Row extends Component {
     const pair = Pair.fromOrder(this.props.row)
     const { price, amount, total, main, base, type } = pair
 
+    const amountOnWatch = BigNumber(estimatedFeeValues[buyCurrency.toLowerCase()]).isGreaterThan(0) ?
+      BigNumber(balance).minus(estimatedFeeValues[buyCurrency.toLowerCase()]).minus(0.00000600).toString()
+      : balance
+
     return (
       <tr style={orderId === id ? { background: 'rgba(0, 236, 0, 0.1)' } : {}}>
         <td>
           <Avatar
             value={ownerPeer}
-            size={45}
+            size={30}
           />
         </td>
         <td>
@@ -202,7 +342,7 @@ export default class Row extends Component {
           </span>
           {' '}
           {
-            `${amount.toFixed(5)} ${main}`
+            `${this.getDecimals(amount, main)} ${main}`
           }
         </td>
         <td>
@@ -211,7 +351,7 @@ export default class Row extends Component {
               id="Row1511"
               defaultMessage={`at price {price}`}
               values={{
-                price: `${price.toFixed(5)} ${base}`,
+                price: `${this.getDecimals(price, base)} ${base}`,
               }} />
           </span>
         </td>
@@ -221,7 +361,7 @@ export default class Row extends Component {
               id="Row159"
               defaultMessage={`for {total}`}
               values={{
-                total: `${total.toFixed(5)} ${base}`,
+                total: `${this.getDecimals(total, base)} ${base}`,
               }}
             />
           </span>
@@ -258,17 +398,17 @@ export default class Row extends Component {
                         </Fragment>
                       ) : (
                         <RequestButton
-                          disabled={balance >= Number(buyAmount)}
-                          onClick={() => this.сheckDeclineOrders(id, isMy ? sellCurrency : buyCurrency)}
+                          disabled={BigNumber(amountOnWatch).isGreaterThanOrEqualTo(buyAmount)}
+                          onClick={() => this.checkDeclineOrders(id, isMy ? sellCurrency : buyCurrency)}
                           data={{ type, amount, main, total, base }}
                         >
                           {type === PAIR_TYPES.BID ? <FormattedMessage id="Row2061" defaultMessage="Sell" /> : <FormattedMessage id="Row206" defaultMessage="Buy" />}
                           {' '}
-                          {amount.toFixed(5)}{' '}{main}
+                          {this.getDecimals(amount, main)}{' '}{main}
                           <br />
                           <FormattedMessage id="Row210" defaultMessage="for" />
                           {' '}
-                          {total.toFixed(5)}{' '}{base}
+                          {this.getDecimals(total, base)}{' '}{base}
                         </RequestButton>
                       )
                     )
@@ -294,7 +434,7 @@ export default class Row extends Component {
         sellAmount,
         isRequested,
         isProcessing,
-        owner: {  peer: ownerPeer },
+        owner: { peer: ownerPeer },
       },
       removeOrder,
       peer,
@@ -302,7 +442,19 @@ export default class Row extends Component {
 
     const pair = Pair.fromOrder(this.props.row)
 
-    const { price, amount, total, main, base, type } = pair
+    const { amount, total, main, base, type } = pair
+
+    const formatCrypto = (value, currency) => {
+      if (currency === 'USDT' || currency == 'EUR') {
+        return String(value.toFixed(2))
+      } else {
+        if (Number(value) > 10) {
+          return String(value.toFixed(5))
+        } else {
+          return String(value.toFixed(8))
+        }
+      }t
+    }
 
     return (
       <tr
@@ -317,16 +469,18 @@ export default class Row extends Component {
                   ? (<FormattedMessage id="RowMobileFirstTypeYouHave" defaultMessage="You have" />)
                   : (<FormattedMessage id="RowMobileFirstTypeYouGet" defaultMessage="You get" />)}
               </span>
-              <span>{`${amount.toFixed(5)} ${main}`}</span>
+              <span>{`${formatCrypto(amount, main)} ${main}`}</span>
             </div>
-            <div><i className="fas fa-exchange-alt" /></div>
+            <div>
+              <i className="fas fa-exchange-alt" />
+            </div>
             <div styleName="tdContainer-2">
               <span styleName="secondType">
                 {type === PAIR_TYPES.BID
                   ? (<FormattedMessage id="RowMobileSecondTypeYouGet" defaultMessage="You get" />)
                   : (<FormattedMessage id="RowMobileSecondTypeYouHave" defaultMessage="You have" />)}
               </span>
-              <span>{`${total.toFixed(5)} ${base}`}</span>
+              <span>{`${formatCrypto(total, base)} ${base}`}</span>
             </div>
             <div styleName="tdContainer-3">
               {
@@ -387,23 +541,9 @@ export default class Row extends Component {
   }
 
   render() {
+    const { windowWidth } = this.state;
     let mobileBreakpoint = 800
-    const {
-      row: {
-        id,
-        buyCurrency,
-        sellCurrency,
-      },
-      intl: { locale },
-    } = this.props
 
-    if (this.state.redirect) {
-      return <Redirect push to={`${localisedUrl(locale, links.swap)}/${buyCurrency}-${sellCurrency}/${id}`} />
-    }
-    if (this.state.windowWidth < mobileBreakpoint)  {
-      return this.renderMobileContent()
-    } else {
-      return this.renderWebContent()
-    }
+    return windowWidth < mobileBreakpoint ? this.renderMobileContent() : this.renderWebContent()
   }
 }

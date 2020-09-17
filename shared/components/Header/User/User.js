@@ -8,12 +8,13 @@ import { constants } from 'helpers'
 
 import styles from './User.scss'
 import CSSModules from 'react-css-modules'
-import Sound from 'helpers/Sound/Sound.mp4'
+import Sound from 'helpers/Sound/alert.mp4'
 
 import Question from './Question/Question'
 import UserAvatar from './UserAvatar/UserAvatar'
 import UserTooltip from './UserTooltip/UserTooltip'
-import SignUpButton from './SignUpButton/SignUpButton'
+
+import links from 'helpers/links'
 
 import Avatar from 'components/Avatar/Avatar'
 import { FormattedMessage, injectIntl } from 'react-intl'
@@ -31,7 +32,7 @@ import config from 'app-config'
   isSigned: 'signUp.isSigned',
   reputation: 'ipfs.reputation',
 })
-@CSSModules(styles)
+@CSSModules(styles, { allowMultiple: true })
 export default class User extends React.Component {
 
   static propTypes = {
@@ -82,7 +83,6 @@ export default class User extends React.Component {
 
     return (
       <div styleName="user-cont">
-        {!isSigned && !isWidget && (<SignUpButton />)}
         {path && !isWidget && (<Question openTour={openTour} />)}
         {
           (!isWidget) && (
@@ -107,15 +107,33 @@ export default class User extends React.Component {
         }
         {!!peer && !isWidget && (
           <Fragment>
-            <div styleName="avatar-container" data-tip data-for="gravatar">
+            <div
+              styleName="avatar-container"
+              {...Number.isInteger(reputation) && reputation !== 0
+                ? {
+                  'data-tip': true,
+                  'data-for': 'gravatar',
+                }
+                : {}
+              }
+            >
               <Avatar
                 className={styles.avatar}
                 value={peer}
                 size={40}
               />
-              <div styleName="avatar-reputation-centered">{ Number.isInteger(reputation) ? reputation : reputationPlaceholder }</div>
+              <div styleName={`avatar-reputation-centered${!Number.isInteger(reputation) || reputation === 0 ? ' noBg' : ''}`}>
+                { Number.isInteger(reputation) && reputation !== 0
+                  ? reputation
+                  : (
+                    <a href={links.telegram} target="_blank" rel="noopener noreferrer">
+                      <i styleName="icon" className="fab fa-telegram-plane" />
+                    </a>
+                  )
+                }
+              </div>
             </div>
-            <ReactTooltip id="gravatar" type="light" effect="solid">
+            <ReactTooltip id="gravatar" effect="solid">
               <span>
                 <FormattedMessage
                   id="avatar24"

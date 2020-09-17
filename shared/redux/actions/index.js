@@ -6,20 +6,19 @@ import notifications from './notifications'
 import firebase from './firebase'
 
 import user from './user'
+import history from './history'
 import feed from './feed'
 import core from './core'
+import ui from './ui'
 import filter from './filter'
 
 import btc from './btc'
-// import xlm from './xlm'
-// import bch from './bch'
-import ltc from './ltc'
+import ghost from './ghost'
+import next from './next'
+import btcmultisig from './btcmultisig'
 import eth from './eth'
-import keychain from './keychain'
-import eos from './eos'
-import tlos from './tlos'
 import token from './token'
-import nimiq from './nimiq'
+
 import api from './api'
 import pairs from './pairs'
 import referral from './referral'
@@ -27,8 +26,12 @@ import analytics from './analytics'
 
 import ipfs from './ipfs'
 
+import invoices from './invoices'
+import comments from './comments'
 
-import usdt from './usdt'
+import backupManager from './backupManager'
+
+import multisigTx from './multisigTx'
 
 
 const tokens = {}
@@ -46,22 +49,28 @@ export default {
   notifications,
   firebase,
   user,
+  history,
   core,
-  ltc,
-  // xlm,
-  // bch,
+  ui,
+
   btc,
-  usdt,
+  btcmultisig,
   eth,
-  keychain,
+  ghost,
+  next,
+
   token,
-  nimiq,
-  eos,
-  tlos,
   feed,
   analytics,
   referral,
   ipfs,
   api,
   pairs,
+  invoices,
+  comments,
+
+  // Local storage backups manager
+  backupManager,
+
+  multisigTx,
 }

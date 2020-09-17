@@ -2,10 +2,10 @@ import React, { Component } from 'react'
 
 import actions from 'redux/actions'
 
-import bitcoin from 'bitcoinjs-lib'
+import * as bitcoin from 'bitcoinjs-lib'
 
 import Link from 'sw-valuelink'
-import { btc, ltc, constants } from 'helpers'
+import { btc, constants, links } from 'helpers'
 
 import cssModules from 'react-css-modules'
 import styles from './ImportKeys.scss'
@@ -15,6 +15,8 @@ import { Modal } from 'components/modal'
 import { FieldLabel } from 'components/forms'
 import { Button } from 'components/controls'
 import { FormattedMessage, defineMessages, injectIntl } from 'react-intl'
+import { localisedUrl } from 'helpers/locale'
+import config from 'helpers/externalConfig'
 
 
 const title = defineMessages({
@@ -25,28 +27,22 @@ const title = defineMessages({
 })
 
 @injectIntl
-
 @cssModules(styles)
 export default class ImportKeys extends Component {
 
   state = {
     ethKey: '',
     btcKey: '',
-    ltcKey: '',
-    // xlmKey: '',
 
     isSubmittedEth: false,
     isSubmittedBtc: false,
-    isSubmittedLtc: false,
-    // isSubmittedXlm: false,
 
     isImportedEth: false,
     isImportedBtc: false,
-    isImportedLtc: false,
-    // isImportedXlm: false,
 
     isDisabled: true,
     keySave: false,
+    onCloseLink: links.wallet,
   }
 
   componentWillMount() {
@@ -59,6 +55,15 @@ export default class ImportKeys extends Component {
 
   componentDidMount() {
     this.checkAnyImport()
+  }
+
+  handleGoTo = (goToLink) => {
+    const {
+      intl: { locale },
+    } = this.props
+
+    window.location.hash = localisedUrl(locale, goToLink)
+    window.location.reload()
   }
 
   handleEthImportKey = () => {
@@ -80,6 +85,10 @@ export default class ImportKeys extends Component {
       this.setState({
         isImportedEth: true,
         isDisabled: false,
+      })
+      actions.core.markCoinAsVisible('ETH', true)
+      this.setState({
+        onCloseLink: links.EthWallet,
       })
     } catch (e) {
       this.setState({ isSubmittedEth: true })
@@ -107,60 +116,31 @@ export default class ImportKeys extends Component {
         isImportedBtc: true,
         isDisabled: false,
       })
+      actions.core.markCoinAsVisible('BTC', true)
+      this.setState({
+        onCloseLink: links.BtcWallet,
+      })
     } catch (e) {
+      console.log(e)
       this.setState({ isSubmittedBtc: true })
     }
   }
 
-  handleLtcImportKey = () => {
-    const { ltcKey } = this.state
-
-    try {
-      bitcoin.ECPair.fromWIF(ltcKey, ltc.network) // eslint-disable-line
-    } catch (e) {
-      this.setState({ isSubmittedLtc: true })
-      return false
-    }
-
-    if (!ltcKey || ltcKey.length < 27) {
-      this.setState({ isSubmittedLtc: true })
-      return
-    }
-
-    try {
-      actions.ltc.login(ltcKey)
-      this.setState({
-        isImportedLtc: true,
-        isDisabled: false,
-      })
-    } catch (e) {
-      this.setState({ isSubmittedLtc: true })
-    }
-  }
-  /*
-  handleXlmImportKey = () => {
-    const { xlmKey } = this.state
-
-    if (!xlmKey) {
-      this.setState({ isSubmittedXlm: true })
-      return
-    }
-
-    try {
-      actions.xlm.login(xlmKey)
-      this.setState({
-        isImportedXlm: true,
-        isDisabled: false,
-      })
-    } catch (e) {
-      this.setState({ isSubmittedXlm: true })
-    }
-  }
-  */
   handleImportKeys = () => {
     this.handleCloseModal()
     localStorage.setItem(constants.localStorage.testnetSkipPKCheck, true)
-    window.location.reload()
+    localStorage.setItem(constants.localStorage.isWalletCreate, true)
+
+    setTimeout(() => {
+      const { onCloseLink } = this.state
+      const { isImportedBtc, isImportedEth } = this.state
+
+      if ([isImportedBtc, isImportedEth].filter(i => i).length > 1) {
+        this.handleGoTo(links.home)
+      } else {
+        this.handleGoTo(onCloseLink)
+      }
+    }, 500)
   }
 
   handleCloseModal = () => {
@@ -173,22 +153,22 @@ export default class ImportKeys extends Component {
   }
 
   checkAnyImport = () => {
-    const { isSubmittedEth, isSubmittedBtc, isSubmittedLtc /* , isSubmittedXlm */ } = this.state
+    const { isSubmittedEth, isSubmittedBtc } = this.state
 
-    if (isSubmittedEth || isSubmittedBtc || isSubmittedLtc /* || isSubmittedXlm */) {
+    if (isSubmittedEth || isSubmittedBtc) {
       this.setState(() => ({ isDisabled: false }))
     }
   }
 
   render() {
     const {
-      isSubmittedEth, isSubmittedBtc, isSubmittedLtc, /* isSubmittedXlm, */
-      isImportedEth, isImportedBtc, isImportedLtc, /* isImportedXlm, */ isDisabled, keySave,
+      isSubmittedEth, isSubmittedBtc,
+      isImportedEth, isImportedBtc, isDisabled, keySave,
     } = this.state
 
     const { intl, data } = this.props
 
-    const linked = Link.all(this, 'ethKey', 'btcKey', 'ltcKey' /* , 'xlmKey' */)
+    const linked = Link.all(this, 'ethKey', 'btcKey')
 
     if (isSubmittedEth) {
       linked.ethKey.check((value) => value !== '', <FormattedMessage id="importkeys172" defaultMessage="Please enter ETH private key" />)
@@ -202,63 +182,38 @@ export default class ImportKeys extends Component {
         this.handleBtcImportKey(), <FormattedMessage id="importkeys190" defaultMessage="Something went wrong. Check your private key, network of this address and etc." />)
     }
 
-    if (isSubmittedLtc) {
-      linked.ltcKey.check((value) => value !== '', <FormattedMessage id="importkeys200" defaultMessage="Please enter LTC private key" />)
-      linked.ltcKey.check((value) => value.length > 27,  <FormattedMessage id="importkeys201" defaultMessage="Please valid LTC private key" />)
-      linked.ltcKey.check(() =>
-        this.handleLtcImportKey(), <FormattedMessage id="importkeys190" defaultMessage="Something went wrong. Check your private key, network of this address and etc." />)
-    }
-    /*
-    if (isSubmittedXlm) {
-      linked.btcKey.check((value) => value !== '', <FormattedMessage id="importkeys187" defaultMessage="Please enter XLM private key" />)
-    }
-    */
     return (
-      <Modal name={this.props.name} title={intl.formatMessage(title.Import)} data={data}>
-        <div styleName="modal">
+      <Modal name={this.props.name} title={intl.formatMessage(title.Import)} data={data} onClose={this.state.onClose}>
+        <div styleName="modal" className="ym-hide-content">
           <p>
             <FormattedMessage id="ImportKeys107" defaultMessage="This procedure will rewrite your private key. If you are not sure about it, we recommend to press cancel" />
           </p>
-          <FieldLabel>
-            <FormattedMessage id="ImportKeys110" defaultMessage="Please enter ETH private key" />
-          </FieldLabel>
-          <Group
-            inputLink={linked.ethKey}
-            placeholder="Key"
-            disabled={isImportedEth}
-            onClick={this.handleEthImportKey}
-          />
-          <FieldLabel>
-            <FormattedMessage id="ImportKeys120" defaultMessage="Please enter BTC private key in WIF format" />
-          </FieldLabel>
-          <Group
-            inputLink={linked.btcKey}
-            placeholder="Key in WIF format"
-            disabled={isImportedBtc}
-            onClick={this.handleBtcImportKey}
-          />
-          <FormattedMessage id="ImportKeys205" defaultMessage="Please enter LTC private key in WIF format">
-            {message => <FieldLabel>{message}</FieldLabel>}
-          </FormattedMessage>
-          <Group
-            inputLink={linked.ltcKey}
-            placeholder="Key in WIF format"
-            disabled={isImportedLtc}
-            onClick={this.handleLtcImportKey}
-          />
-          {
-          /*
-          <FormattedMessage id="ImportKeys176" defaultMessage="Please enter xlm private key">
-            {message => <FieldLabel>{message}</FieldLabel>}
-          </FormattedMessage>
-          <Group
-            inputLink={linked.xlmKey}
-            placeholder="Key"
-            disabled={isImportedXlm}
-            onClick={this.handleXlmImportKey}
-          />
-          */
-          }
+          {(!config.opts.curEnabled || config.opts.curEnabled.eth) && (
+            <>
+              <FieldLabel positionStatic>
+                <FormattedMessage id="ImportKeys110" defaultMessage="Please enter ETH private key" />
+              </FieldLabel>
+              <Group
+                inputLink={linked.ethKey}
+                placeholder="Key"
+                disabled={isImportedEth}
+                onClick={this.handleEthImportKey}
+              />
+            </>
+          )}
+          {(!config.opts.curEnabled || config.opts.curEnabled.btc) && (
+            <>
+              <FieldLabel positionStatic>
+                <FormattedMessage id="ImportKeys120" defaultMessage="Please enter BTC private key in WIF format" />
+              </FieldLabel>
+              <Group
+                inputLink={linked.btcKey}
+                placeholder="Key in WIF format"
+                disabled={isImportedBtc}
+                onClick={this.handleBtcImportKey}
+              />
+            </>
+          )}
           {
             !keySave && (
               <span styleName="error">

@@ -1,47 +1,55 @@
-import React from 'react'
+import React, { Fragment } from 'react'
 import PropTypes from 'prop-types'
 import { withRouter } from 'react-router-dom'
+import cx from 'classnames'
+import { isMobile } from 'react-device-detect'
+import { constants } from 'helpers'
 
-import config from 'app-config'
+import config from 'helpers/externalConfig'
 import { connect } from 'redaction'
 
 import styles from './Footer.scss'
 import CSSModules from 'react-css-modules'
 
-import Referral from './Referral/Referral'
-import Info from './Info/Info'
-import Links from './Links/Links'
 import SocialMenu from './SocialMenu/SocialMenu'
 import WidthContainer from 'components/layout/WidthContainer/WidthContainer'
 import SwitchLang from './SwitchLang/SwitchLang'
-import { isMainOrPartialPages } from 'helpers/locationPaths'
 
 
-const Footer = (props) => (
-  <div styleName="footer">
-    <WidthContainer styleName="container">
-      {(!config.isWidget && !isMainOrPartialPages(props.location.pathname)) && (<Referral address={props.userEthAddress} />)}
-      {!config.isWidget && (<Links />)}
-      {!config.isWidget && (<SwitchLang />)}
-      {!config.isWidget && (<SocialMenu />)}
-      <Info {...props} />
-      <span style={{ color: '#ffffff', fontSize: '12px' }}>{config.time}</span>
-    </WidthContainer>
-  </div>
-)
+const Footer = (props) => {
+
+  const isDark = localStorage.getItem(constants.localStorage.isDark)
+
+  const isFooterDisabled = config.opts.ui.footerDisabled
+
+  return (
+    <footer
+      className={cx({
+        [styles.footer]: true,
+        [styles.dark]: isDark,
+        [styles.mobile]: isMobile,
+      })}
+    >
+      {!isFooterDisabled && (
+        <WidthContainer styleName="container">
+          <SwitchLang {...props} />
+          {!config.isWidget && <SocialMenu />}
+        </WidthContainer>
+      )}
+    </footer>
+  )
+}
 
 Footer.propTypes = {
   props: PropTypes.shape({
     serverAddress: PropTypes.string.isRequired,
-    isOnline: PropTypes.bool.isRequired,
-    onlineUsers: PropTypes.number,
     userEthAddress: PropTypes.string.isRequired,
   }),
 }
 
 export default withRouter(connect({
   'serverAddress': 'ipfs.server',
-  'isOnline': 'ipfs.isOnline',
-  'onlineUsers': 'ipfs.onlineUsers',
   'userEthAddress': 'user.ethData.address',
+  'dashboardView': 'ui.dashboardModalsAllowed',
+  'modals': 'modals',
 })(CSSModules(Footer, styles, { allowMultiple: true })))

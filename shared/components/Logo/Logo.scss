@@ -1,39 +1,23 @@
 .logo {
+  display: block;
   width: 32px;
   height: 30px;
-  display: block;
+  
 
   img {
     display: block;
+    will-change: filter;
+    transition: filter 0.1s ease;
   }
 }
 
-
-@include media-mobile {
-	.logo {
-		display: none;
-	}
-} 
-
-@media screen and (max-width: 860px){
-  .logo {
-    display: none;
-  }
-}
-
-.mobile {
-  width: 100%;
-  text-align: center;
-
+.whiteFill {
   img {
-    margin: 0 auto;
-    padding-left: 30px;
+    filter: brightness(0) invert(1);
   }
 }
 
-@media screen and (min-width: 860px){
-  .mobile {
-    display: none;
-  }
+.otherLogoBrand {
+  outline: none;
 }
 

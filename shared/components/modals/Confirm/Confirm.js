@@ -14,8 +14,6 @@ import { Button } from 'components/controls'
 import { FieldLabel, Input } from 'components/forms'
 import { FormattedMessage, injectIntl, defineMessages } from 'react-intl'
 import WidthContainer from 'components/layout/WidthContainer/WidthContainer'
-import Logo from 'components/Logo/Logo'
-import CloseIcon from 'components/ui/CloseIcon/CloseIcon'
 
 
 const defaultLanguage = defineMessages({
@@ -36,9 +34,10 @@ const defaultLanguage = defineMessages({
     defaultMessage: 'No',
   },
 })
+const isDark = localStorage.getItem(constants.localStorage.isDark)
 
 @injectIntl
-@cssModules(styles)
+@cssModules(styles, { allowMultiple: true })
 export default class Confirm extends React.Component {
 
   static propTypes = {
@@ -57,6 +56,14 @@ export default class Confirm extends React.Component {
     }
 
     actions.modals.close(name)
+  }
+
+  handleCancel = () => {
+    const { data } = this.props
+    if (typeof data.onCancel === 'function') {
+      data.onCancel()
+    }
+    this.handleClose()
   }
 
   handleConfirm = () => {
@@ -93,7 +100,7 @@ export default class Confirm extends React.Component {
     }
 
     return (
-      <div styleName="modal-overlay" onClick={this.handleClose}>
+      <div styleName={`modal-overlay ${isDark ? 'dark' : ''}`} onClick={this.handleClose}>
         <div styleName="modal">
           <div styleName="header">
             <WidthContainer styleName="headerContent">
@@ -105,8 +112,8 @@ export default class Confirm extends React.Component {
               <p styleName="notification">{labels.message}</p>
             </div>
             <div styleName="button-overlay">
+              <Button styleName="button" gray onClick={this.handleCancel}>{labels.no}</Button>
               <Button styleName="button" brand onClick={this.handleConfirm}>{labels.yes}</Button>
-              <Button styleName="button" gray onClick={this.handleClose}>{labels.no}</Button>
             </div>
           </div>
         </div>

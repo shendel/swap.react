@@ -21,9 +21,7 @@ import DepositWindow from './DepositWindow/DepositWindow'
 import SwapProgress from './SwapProgress/SwapProgress'
 import SwapList from './SwapList/SwapList'
 import Timer from './Timer/Timer'
-import BtcScript from './BtcScript/BtcScript'
 import FeeControler from './FeeControler/FeeControler'
-import paddingForSwapList from 'shared/helpers/paddingForSwapList.js'
 
 
 @CSSModules(styles)
@@ -44,7 +42,6 @@ export default class BtcToEthToken extends Component {
       enabledButton: false,
       isAddressCopied: false,
       flow: this.swap.flow.state,
-      paddingContainerValue: 0,
       destinationAddressTimer: true,
       isShowingBitcoinScript: false,
       currencyAddress: currencyData.address,
@@ -68,7 +65,6 @@ export default class BtcToEthToken extends Component {
 
   componentDidMount() {
     const { swap, flow: { step, isParticipantSigned } } = this.state
-    this.changePaddingValue()
     this.confirmAddressTimer = setInterval(() => {
       if (this.state.flow.step === 1) {
         this.confirmAddress()
@@ -87,55 +83,9 @@ export default class BtcToEthToken extends Component {
     }, 3000)
   }
 
-  componentDidUpdate(prevProps, prevState) {
-    if (prevState.flow !== this.state.flow) {
-      this.changePaddingValue()
-    }
-  }
-
   submitSecret = () => {
     const { secret } = this.state
     this.swap.flow.submitSecret(secret)
-  }
-
-  changePaddingValue = () => {
-    const { flow: { step } } = this.state
-    this.setState(() => ({
-      paddingContainerValue: paddingForSwapList({ step }),
-    }))
-  }
-
-  componentDidUpdate(prevProps, prevState) {
-    if (prevState.flow !== this.state.flow) {
-      this.changePaddingValue()
-    }
-  }
-
-  changePaddingValue = () => {
-    const { flow: { step } } = this.state
-    this.setState(() => ({
-      paddingContainerValue: paddingForSwapList({ step }),
-    }))
-  }
-
-  changePaddingValue = () => {
-    const { flow } = this.state
-
-    if (flow.step <= 2) {
-      this.setState(() => ({
-        paddingContainerValue: 60 * flow.step,
-      }))
-    }
-    if (flow.step > 5 && flow.step < 7) {
-      this.setState(() => ({
-        paddingContainerValue: 180,
-      }))
-    }
-    if (flow.step > 7) {
-      this.setState(() => ({
-        paddingContainerValue: 210,
-      }))
-    }
   }
 
   handleFlowStateUpdate = (values) => {
@@ -211,10 +161,11 @@ export default class BtcToEthToken extends Component {
       continueSwap,
       enoughBalance,
       history,
-      locale,
       tokenItems,
       waitWithdrawOther,
       onClickCancelSwap,
+      locale,
+      wallets,
     } = this.props
 
     const {
@@ -222,7 +173,6 @@ export default class BtcToEthToken extends Component {
       flow,
       secret,
       ethAddress,
-      paddingContainerValue,
       isShowingBitcoinScript,
     } = this.state
 
@@ -231,42 +181,42 @@ export default class BtcToEthToken extends Component {
     linked.destinationBuyAddress.check((value) => value !== '', 'Please enter ETH address for tokens')
 
     const feeControllerView = <FeeControler ethAddress={ethAddress} />
-
-    // eslint-disable-next-line
-    const swapProgressView = <SwapProgress flow={flow} name="BtcToEthTokens" swap={this.props.swap} history={history} locale={locale} tokenItems={tokenItems} wallets={this.props.wallets} />
+    const swapProgressView = <SwapProgress flow={flow} name="BtcToEthTokens" swap={this.props.swap} history={history} locale={locale} wallets={wallets} tokenItems={tokenItems} />
 
     return (
       <div>
         <div styleName="swapContainer">
-          <div styleName="swapInfo">
-            {this.swap.id &&
-              (
-                <strong>
-                  {this.swap.sellAmount.toFixed(6)}
-                  {' '}
-                  {this.swap.sellCurrency} &#10230; {' '}
-                  {this.swap.buyAmount.toFixed(6)}
-                  {' '}
-                  {this.swap.buyCurrency}
-                </strong>
+          <div>
+            <div styleName="swapInfo">
+              {this.swap.id &&
+                (
+                  <strong>
+                    {this.swap.sellAmount.toFixed(6)}
+                    {' '}
+                    {this.swap.sellCurrency} &#10230; {' '}
+                    {this.swap.buyAmount.toFixed(6)}
+                    {' '}
+                    {this.swap.buyCurrency}
+                  </strong>
+                )
+              }
+            </div>
+            {!enoughBalance && flow.step === 3
+              ? (
+                <div styleName="swapDepositWindow">
+                  <DepositWindow currencyData={currencyData} swap={swap} flow={flow} tokenItems={tokenItems} />
+                </div>
+              )
+              : (
+                <Fragment>
+                  {!continueSwap
+                    ? ((!waitWithdrawOther) ? feeControllerView : swapProgressView)
+                    : swapProgressView
+                  }
+                </Fragment>
               )
             }
           </div>
-          {!this.props.enoughBalance && this.state.swap.flow.state.step === 4
-            ? (
-              <div styleName="swapDepositWindow">
-                <DepositWindow currencyData={currencyData} swap={swap} flow={flow} tokenItems={tokenItems} />
-              </div>
-            )
-            : (
-              <Fragment>
-                {!continueSwap
-                  ? ((!waitWithdrawOther) ? feeControllerView : swapProgressView)
-                  : swapProgressView
-                }
-              </Fragment>
-            )
-          }
           <SwapList flow={this.state.swap.flow.state} enoughBalance={enoughBalance} swap={this.props.swap} onClickCancelSwap={onClickCancelSwap} />
         </div>
         <div styleName="swapContainerInfo">{children}</div>

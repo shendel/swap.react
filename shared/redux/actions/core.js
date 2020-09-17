@@ -5,7 +5,9 @@ import SwapApp from 'swap.app'
 import Swap from 'swap.swap'
 import { constants } from 'helpers'
 import Pair from 'pages/Home/Orders/Pair'
-import config from 'app-config'
+import config from 'helpers/externalConfig'
+
+import metamask from 'helpers/metamask'
 
 
 const debug = (...args) => console.log(...args)
@@ -18,12 +20,17 @@ const getOrders = (orders) => {
 const addCurrencyFromOrders = (orders) => {
   if (config && config.isWidget) return // НЕ добавляем валюты из ордеров в режиме виджета
 
+  // Зачем только это???
+  // Если в reducers.currencies.partialItems забыли добавить?
+  // Так там автоматически генерирует....
+  // TODO Проверить зависимости и удалить
+
   const currenciesGetState = getState().currencies
-  const allCurrencyies = currenciesGetState.items.map(item => item.name) // все валюты достпуные в клиенте
+  const allCurrencyies = currenciesGetState.items.map(item => item.name.toLowerCase()) // все валюты достпуные в клиенте
   const partialCurrency = currenciesGetState.partialItems // получаем все премиальные валюты
 
-  const sellOrderArray = orders.map(item => item.sellCurrency) // получаем из ордерова валюты на продажу
-  const buyOrderArray = orders.map(item => item.buyCurrency) // получаем из ордерова валюты на покупку
+  const sellOrderArray = orders.map(item => item.sellCurrency.toLowerCase()) // получаем из ордерова валюты на продажу
+  const buyOrderArray = orders.map(item => item.buyCurrency.toLowerCase()) // получаем из ордерова валюты на покупку
 
   let sortedArray = [...sellOrderArray] // записываем sellOrderArray в массив
 
@@ -32,31 +39,35 @@ const addCurrencyFromOrders = (orders) => {
     for (const buyCurrency of buyOrderArray) { // eslint-disable-line
       if (sellCurrency !== buyCurrency) {
         if (!sellOrderArray.includes(sellCurrency)) {
-          if (allCurrencyies.includes(sellCurrency)) { // не пускаю валюты не существующие в клиенте
-            sortedArray.push(sellCurrency)
-          }
-        }  else if (!sellOrderArray.includes(buyCurrency)) {
-          if (allCurrencyies.includes(buyCurrency)) { // не пускаю валюты не существующие в клиенте
-            sortedArray.push(buyCurrency)
-          }
+          sortedArray.push(sellCurrency.toLowerCase())
+        } else if (!sellOrderArray.includes(buyCurrency)) {
+          sortedArray.push(buyCurrency.toLowerCase())
         }
       }
     }
   }
 
+  let hasUpdates = false
+
   sortedArray.forEach(item => { // добавляем объект в дроп, еще раз проверяя, на совпадения
-    if (!partialCurrency.map(item => item.name).includes(item)) {
-      partialCurrency.push(
-        {
-          name: item.toUpperCase(),
-          title: item.toUpperCase(),
-          icon: item.toLowerCase(),
-          value: item.toLowerCase(),
-        }
-      )
+    if (!partialCurrency.map(item => item.name.toLowerCase()).includes(item)) {
+      if (allCurrencyies.includes(item)) { // не пускаю валюты не существующие в клиенте
+        hasUpdates = true
+        partialCurrency.push(
+          {
+            name: item.toUpperCase(),
+            title: item.toUpperCase(),
+            icon: item.toLowerCase(),
+            value: item.toLowerCase(),
+          }
+        )
+      }
     }
   })
-  reducers.currencies.updatePartialItems(partialCurrency)
+
+  if (hasUpdates) {
+    reducers.currencies.updatePartialItems(partialCurrency)
+  }
 }
 
 const getSwapById = (id) => new Swap(id, SwapApp.shared())
@@ -68,6 +79,12 @@ const getUserData = (currency) => {
 
     case 'ETH':
       return getState().user.ethData
+
+    case 'GHOST':
+      return getState().user.ghostData
+
+    case 'NEXT':
+      return getState().user.nextData
 
     default:
       return {}
@@ -89,10 +106,10 @@ const declineRequest = (orderId, participantPeer) => {
 }
 
 const rememberOrder = (orderId) => {
-
   reducers.rememberedOrders.savedOrders(orderId)
   localStorage.setItem(constants.localStorage.savedOrders, JSON.stringify(getState().rememberedOrders.savedOrders))
 }
+
 const saveDeletedOrder = (orderId) => {
   reducers.rememberedOrders.deletedOrders(orderId)
   localStorage.setItem(constants.localStorage.deletedOrders, JSON.stringify(getState().rememberedOrders.deletedOrders))
@@ -127,7 +144,7 @@ const deletedPartialCurrency = (orderId) => {
   const deletedOrderSell = orders.filter(item => item.sellCurrency.toUpperCase() === deletedOrderSellCurrency)
   const deletedOrderBuy = orders.filter(item => item.buyCurrency.toUpperCase() === deletedOrderBuyCurrency)
 
-  const premiumCurrencies = ['BTC', 'ETH', 'SWAP'] // валюты, которые всегда должны быть в дропе
+  const premiumCurrencies = ['BTC', 'ETH', 'GHOST', 'NEXT', 'SWAP'] // валюты, которые всегда должны быть в дропе
 
   if (deletedOrderSell.length === 1 && !premiumCurrencies.includes(deletedOrderSellCurrency)) {
     reducers.currencies.deletedPartialCurrency(deletedOrderSellCurrency)
@@ -295,17 +312,100 @@ const getInformationAboutSwap = (swapId) => {
   }
 }
 
-const markCoinAsHidden = (coin) => {
+const getHiddenCoins = () => getState().core.hiddenCoinsList || []
+
+const markCoinAsHidden = (coin, doBackup) => {
   let list = getState().core.hiddenCoinsList || []
   if (!list.includes(coin)) {
     reducers.core.markCoinAsHidden(coin)
     localStorage.setItem(constants.localStorage.hiddenCoinsList, JSON.stringify(getState().core.hiddenCoinsList))
+
+    if (doBackup) actions.backupManager.serverBackup()
   }
 }
 
-const markCoinAsVisible = (coin) => {
-  reducers.core.markCoinAsVisible(coin)
-  localStorage.setItem(constants.localStorage.hiddenCoinsList, JSON.stringify(getState().core.hiddenCoinsList))
+const markCoinAsVisible = (coin, doBackup) => {
+  const { hiddenCoinsList } = constants.localStorage
+
+  const findedCoin = JSON.parse(localStorage.getItem(hiddenCoinsList)).find(el => el.includes(coin) && el.includes(':'))
+
+  reducers.core.markCoinAsVisible(findedCoin || coin)
+  localStorage.setItem(hiddenCoinsList, JSON.stringify(getState().core.hiddenCoinsList))
+
+  if (doBackup) actions.backupManager.serverBackup()
+}
+
+const getWallet = (findCondition) => {
+  const { currency, address } = findCondition
+
+  const founded = getWallets().filter((wallet) => {
+    const conditionOk = (currency && wallet.currency.toLowerCase() === currency.toLowerCase())
+
+    if (address) {
+      if (wallet.address.toLowerCase() === address.toLowerCase()) {
+        return conditionOk
+      }
+    } else {
+      return conditionOk
+    }
+  })
+  return (founded.length) ? founded[0] : false
+}
+
+const getWallets = () => {
+  const {
+    user: {
+      btcData,
+      ghostData,
+      nextData,
+      btcMultisigSMSData,
+      btcMultisigUserData,
+      btcMultisigPinData,
+      ethData,
+      tokensData,
+      isTokenSigned,
+
+      metamaskData,
+    },
+  } = getState()
+
+  // Sweep
+  const {
+    user: {
+      btcMnemonicData,
+      ethMnemonicData,
+      ghostMnemonicData,
+      nextMnemonicData,
+    },
+  } = getState()
+
+  const metamaskConnected = metamask.isEnabled() && metamask.isConnected()
+
+  const allData = [
+    ... (!config.opts.curEnabled || config.opts.curEnabled.eth) ? (metamaskData) ? [metamaskData] : [] : [],
+    ... (!config.opts.curEnabled || config.opts.curEnabled.btc) ? (btcMnemonicData && !btcData.isMnemonic) ? [btcMnemonicData] : [] : [], // Sweep
+    ... (!config.opts.curEnabled || config.opts.curEnabled.eth) ? (ethMnemonicData && !ethData.isMnemonic) ? [ethMnemonicData] : [] : [], // Sweep
+    ... (!config.opts.curEnabled || config.opts.curEnabled.btc) ? [btcData] : [],
+    ... (!config.opts.curEnabled || config.opts.curEnabled.btc) ? [btcMultisigSMSData] : [],
+    ... (!config.opts.curEnabled || config.opts.curEnabled.btc) ? (btcMultisigPinData && btcMultisigPinData.isRegistered) ? [btcMultisigPinData] : [] : [],
+    ... (!config.opts.curEnabled || config.opts.curEnabled.btc) ? [btcMultisigUserData] : [],
+    ... (!config.opts.curEnabled || config.opts.curEnabled.btc) ? (btcMultisigUserData && btcMultisigUserData.wallets) ? btcMultisigUserData.wallets : [] : [],
+    ... (!config.opts.curEnabled || config.opts.curEnabled.eth)
+      ? ((metamaskConnected) 
+        ? [] 
+        : [ethData]) 
+      : [],
+    ... (!config.opts.curEnabled || config.opts.curEnabled.ghost) ? [ghostData] : [],
+    ... (!config.opts.curEnabled || config.opts.curEnabled.next) ? [nextData] : [],
+    ...Object.keys(tokensData)
+      .filter(k => !tokensData[k].reducerDataTarget)
+      .map(k => tokensData[k]),
+  ].map(({ account, keyPair, ...data }) => ({
+    ...data,
+  }))
+
+
+  return allData.filter(item => item && item.address)
 }
 
 export default {
@@ -334,4 +434,7 @@ export default {
   initPartialOrders,
   deletedPartialCurrency,
   addCurrencyFromOrders,
+  getWallets,
+  getWallet,
+  getHiddenCoins,
 }

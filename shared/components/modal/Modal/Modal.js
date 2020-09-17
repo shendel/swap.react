@@ -1,9 +1,10 @@
 import React, { Component } from 'react'
+import { connect } from 'redaction'
 
 import actions from 'redux/actions'
 import PropTypes from 'prop-types'
 import cx from 'classnames'
-
+import { constants } from 'helpers'
 import cssModules from 'react-css-modules'
 import styles from './Modal.scss'
 
@@ -14,6 +15,12 @@ import Center from 'components/layout/Center/Center'
 import Logo from 'components/Logo/Logo'
 
 
+const isDark = localStorage.getItem(constants.localStorage.isDark)
+@connect(({
+  ui: { dashboardModalsAllowed },
+}) => ({
+  dashboardView: dashboardModalsAllowed,
+}))
 @cssModules(styles, { allowMultiple: true })
 export default class Modal extends Component {
 
@@ -45,7 +52,41 @@ export default class Modal extends Component {
     shouldCenterHorizontally: true,
   }
 
-  close = () => {
+  catchLocationChange = false
+
+  componentDidMount() {
+    const {
+      closeOnLocationChange,
+      onLocationChange,
+    } = this.props
+
+    if (closeOnLocationChange) {
+      let currentLocation = window.location.hash
+
+      this.catchLocationChange = setInterval(() => {
+        if (window.location.hash != currentLocation) {
+          if (typeof onLocationChange === 'function') {
+            if (onLocationChange(window.location.hash)) {
+              currentLocation = window.location.hash
+            } else {
+              clearInterval(this.catchLocationChange)
+              this.close(null, true)
+            }
+          } else {
+            clearInterval(this.catchLocationChange)
+            this.close(null, true)
+          }
+        }
+      }, 500)
+    }
+
+  }
+
+  componentWillUnmount() {
+    clearInterval(this.catchLocationChange)
+  }
+
+  close = (event, isLocationChange) => {
     const { name, data, onClose, disableClose } = this.props
 
     if (name === 'OfferModal') {
@@ -56,18 +97,18 @@ export default class Modal extends Component {
       actions.modals.close(name)
 
       if (typeof onClose === 'function') {
-        onClose()
+        onClose(isLocationChange)
       }
 
       if (typeof data.onClose === 'function') {
-        data.onClose()
+        data.onClose(isLocationChange)
       }
     }
   }
 
   render() {
     const { className, whiteLogo, showLogo, title, showCloseButton, disableClose, children,
-      titleUppercase, name, shouldCenterHorizontally, shouldCenterVertically, styleName, delayClose, data } = this.props
+      titleUppercase, name, shouldCenterHorizontally, shouldCenterVertically, styleName, delayClose, data, dashboardView } = this.props
 
     window.addEventListener('popstate', function (e) { actions.modals.close(name) }) // eslint-disable-line
 
@@ -76,15 +117,16 @@ export default class Modal extends Component {
     })
 
     return (
-      <Overlay styleName={styleName}>
-        <div styleName="modal" className={className}>
+      <Overlay dashboardView={dashboardView} styleName={styleName}>
+        <div styleName={cx({
+          modal: true,
+          modal_dashboardView: dashboardView,
+          dark: isDark
+        })} className={className}>
           {
             Boolean(title || showCloseButton) && (
               <div styleName="header">
                 <WidthContainer styleName="headerContent">
-                  {
-                    showLogo && <Logo isColored={!whiteLogo} />
-                  }
                   <div styleName={titleStyleName} role="title">{title}</div>
                   {
                     showCloseButton && !disableClose && (
@@ -95,12 +137,25 @@ export default class Modal extends Component {
               </div>
             )
           }
-          <div styleName="contentContainer">
-            <Center scrollable centerHorizontally={shouldCenterHorizontally} centerVertically={shouldCenterVertically}>
-              <div styleName="content">
-                {children}
-              </div>
-            </Center>
+          <div styleName={cx({
+            contentContainer: true,
+            contentContainer_dashboardView: dashboardView,
+          })}>
+            {
+              dashboardView
+                ? (
+                  <div styleName="content content_dashboardView" className="contentHeightEvaluateHere">
+                    {children}
+                  </div>
+                )
+                : (
+                  <Center scrollable centerHorizontally={shouldCenterHorizontally} centerVertically={shouldCenterVertically}>
+                    <div styleName="content">
+                      {children}
+                    </div>
+                  </Center>
+                )
+            }
           </div>
         </div>
       </Overlay>

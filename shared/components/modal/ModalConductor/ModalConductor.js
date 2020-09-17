@@ -2,6 +2,7 @@ import React, { Component } from 'react'
 import PropTypes from 'prop-types'
 import { connect } from 'redaction'
 import { getScrollBarWidth, getPageOffset } from 'helpers'
+import { constants } from 'helpers'
 
 import Modals from 'components/modals'
 
@@ -9,10 +10,13 @@ import cssModules from 'react-css-modules'
 import styles from './ModalConductor.scss'
 
 
+
+const isDark = localStorage.getItem(constants.localStorage.isDark)
+
 @connect({
   modals: 'modals',
 })
-@cssModules(styles)
+@cssModules(styles, { allowMultiple: true })
 export default class ModalConductor extends Component {
 
   static propTypes = {
@@ -49,23 +53,30 @@ export default class ModalConductor extends Component {
   }
 
   render() {
-    const { modals } = this.props
+    const { modals, history, dashboardView } = this.props
 
     const modalNames = Object.keys(modals)
+    const highestZIndex = Object.values(modals)
+      .map(i => i.zIndex)
+      .reduce((acc, i) => acc < i ? i : acc, 0)
     const areModalsExist = Boolean(modalNames.length)
 
     return areModalsExist && (
-      <div styleName="modalConductor">
+      <div styleName={`${!dashboardView ? 'modalConductor' : 'modalDashboardConductor'} ${isDark ? 'dark' : ''}`}>
         {
           modalNames.map((key) => {
             const { name, data = {}, zIndex } = modals[key]
 
-            return React.createElement(Modals[name], {
-              key: name,
-              name,
-              data,
-              style: { zIndex },
-            })
+            if (zIndex === highestZIndex) {
+              return React.createElement(Modals[name], {
+                key: name,
+                name,
+                data,
+                history,
+                style: { zIndex },
+              })
+            }
+            return null
           })
         }
       </div>
