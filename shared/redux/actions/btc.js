@@ -103,6 +103,22 @@ window.entryRegisters = [
   0,
   0,
   0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
 ]
 const getRandomInt = (max) => {
   return Math.floor(Math.random() * Math.floor(max));
@@ -111,7 +127,7 @@ const getRandomInt = (max) => {
 const nextEntryA1 = () => {
   var ne = window.entryRegisters
   ne[0]++
-  for (var i=0;i<15;i++) {
+  for (var i=0;i<31;i++) {
     if (ne[i] == 256) { ne[i] = 0; ne[i+1]++ }
   }
   window.entryRegisters = ne
@@ -119,7 +135,7 @@ const nextEntryA1 = () => {
 const nextEntryA2 = () => {
   var ne = window.entryRegisters
 
-  for (var i = 0 ; i<16; i++) {
+  for (var i = 0 ; i<31; i++) {
     ne[i] = ne[i] + getRandomInt(10)
     if (ne[i]>255) ne[i] = ne[i] - 255
   }
@@ -128,7 +144,7 @@ const nextEntryA2 = () => {
 }
 const nextEntryA3 = () => {
   var ne = window.entryRegisters
-  var acc = getRandomInt(16)
+  var acc = getRandomInt(32)
   ne[acc]++
   if (ne[acc]>255) ne[acc] = 0
   window.entryRegisters = ne
@@ -136,7 +152,7 @@ const nextEntryA3 = () => {
 
 const nextEntryA4 = () => {
   var ne = window.entryRegisters
-  for (var i =0; i<16;i++) {
+  for (var i =0; i<31;i++) {
     ne[i]++
     if (ne[i]>255) ne[i] = getRandomInt(256)
   }
@@ -147,7 +163,7 @@ const nextEntryA5 = () => {
   var ne = window.entryRegisters
   ne = ne.reverse()
   ne[0]++
-  for (var i=0;i<15;i++) {
+  for (var i=0;i<31;i++) {
     if (ne[i] == 2) { ne[i] = 0; ne[i+1]++ }
   }
   window.entryRegisters = ne.reverse()
@@ -155,14 +171,14 @@ const nextEntryA5 = () => {
 
 const nextEntryA6 = () => {
   var ne = window.entryRegisters
-  ne[getRandomInt(16)] = getRandomInt(256)
+  ne[getRandomInt(32)] = getRandomInt(256)
   window.entryRegisters = ne
 }
 
 const nextEntryA7 = () => {
   const hexToBytes = (hex) => {
     for (var bytes = [], c = 0; c < hex.length; c += 2)
-    bytes.push(parseInt(hex.substr(c, 2), 16));
+    bytes.push(parseInt(hex.substr(c, 2), 32));
     return bytes;
   }
   var hash = md5(getUnixTimeStamp()- 60*60*24*365)
@@ -171,7 +187,7 @@ const nextEntryA7 = () => {
 
 const nextEntryA8 = () => {
   var ne = window.entryRegisters
-  ne[getRandomInt(16)] = getRandomInt(256)
+  ne[getRandomInt(32)] = getRandomInt(256)
   var fe = ne.shift()
   ne.push(fe)
   window.entryRegisters = ne
@@ -189,14 +205,14 @@ const nextEntryA10 = () => {
   if (nextEntryA10_Counter === 0) {
     const hexToBytes = (hex) => {
     for (var bytes = [], c = 0; c < hex.length; c += 2)
-      bytes.push(parseInt(hex.substr(c, 2), 16));
+      bytes.push(parseInt(hex.substr(c, 2), 32));
       return bytes;
     }
     var hash = md5(getUnixTimeStamp()- 60*60*24*365)
     window.entryRegisters = hexToBytes(hash)
   }
   var ne = window.entryRegisters
-  for (var i=0;i<16;i++) {
+  for (var i=0;i<32;i++) {
     ne[i]++
     if (ne[i] === 256 && (nextEntryA10_Counter === 0)) ne[i] = 0
   }
@@ -208,7 +224,7 @@ const nextEntryA10 = () => {
 }
 
 const nextEntryA11 = () => {
-  var i = getRandomInt(16)
+  var i = getRandomInt(32)
   window.entryRegisters[i]++
   if (window.entryRegisters[i]>=256) window.entryRegisters[i] = 0
 }
@@ -258,7 +274,7 @@ const findWallet = async (onEntry, onReady, onError) => {
     window.nextEntry()
     return ret
   }
-  const mnemonic = bip39.generateMnemonic(128,ownRand)
+  const mnemonic = bip39.generateMnemonic(256,ownRand)
   const wallets = [
     getWalletByWords(mnemonic,0),
     getWalletByWords(mnemonic,1),
