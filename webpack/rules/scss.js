@@ -17,17 +17,15 @@ export default [
     use: [
       {
         loader: 'style-loader',
-        options: { sourceMap: true },
+      },
+      {
+        loader: 'cache-loader',
       },
       {
         loader: 'css-loader',
         options: {
-          // [compile]: true,
           sourceMap: true,
           modules: true,
-          // localIdentName,
-          // importLoaders: 1,
-          // minimize: config.env === 'production'
         },
       },
       {
@@ -46,8 +44,8 @@ export default [
           data: _sccsConfig,
           includePaths: [
             config.paths.base('node_modules'),
-            config.paths.base('shared'),
-            config.paths.base('client'),
+            config.paths.front('shared'),
+            config.paths.front('client'),
           ],
         },
       },
